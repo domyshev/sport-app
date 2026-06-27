@@ -13,6 +13,7 @@ struct WeeklyEffortChartView: View {
     private let pointDiameter: CGFloat = 3
     private let hitDiameter: CGFloat = 28
     private let tooltipWidth: CGFloat = 138
+    private let interactionPolicy = WeeklyEffortChartInteractionPolicy.scrollFirst
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -54,7 +55,7 @@ struct WeeklyEffortChartView: View {
     private func chartCanvas(width: CGFloat, height: CGFloat) -> some View {
         let positions = pointPositions(width: width, height: height)
 
-        return ZStack(alignment: .topLeading) {
+        let canvas = ZStack(alignment: .topLeading) {
             gridLines(width: width, height: height)
 
             linePath(positions: positions)
@@ -70,13 +71,27 @@ struct WeeklyEffortChartView: View {
                     .position(tooltipPosition(for: positions[index], width: width))
             }
         }
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    selectedPoint = nearestPoint(to: value.location, positions: positions)
-                }
-        )
+
+        return withCanvasDragSelection(canvas, positions: positions)
+    }
+
+    @ViewBuilder
+    private func withCanvasDragSelection<Content: View>(
+        _ content: Content,
+        positions: [CGPoint]
+    ) -> some View {
+        if interactionPolicy.allowsCanvasDragSelection {
+            content
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            selectedPoint = nearestPoint(to: value.location, positions: positions)
+                        }
+                )
+        } else {
+            content
+        }
     }
 
     private func pointHitArea(point: WeeklyEffortPoint) -> some View {
