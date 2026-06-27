@@ -2,3 +2,4 @@
 .temp/
 .superpowers/
 from_garmin_official_export/
+garmin_summarized_activities.json
