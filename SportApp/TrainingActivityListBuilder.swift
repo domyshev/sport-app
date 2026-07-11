@@ -80,7 +80,7 @@ struct TrainingActivityListBuilder {
             id: activity.activityId,
             activityType: activity.activityType,
             title: TrainingActivityPresentation.title(for: activity),
-            distanceText: TrainingActivityPresentation.distanceText(for: activity.distance),
+            distanceText: TrainingActivityPresentation.distanceText(forGarminCentimeters: activity.distance),
             durationText: TrainingActivityPresentation.durationText(for: activity.duration),
             startTimeText: TrainingActivityPresentation.startTimeText(for: activity.startTimeLocal),
             caloriesText: TrainingActivityPresentation.caloriesText(for: activity.calories)

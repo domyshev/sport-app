@@ -22,6 +22,11 @@ struct TrainingActivityCardModel: Identifiable, Equatable {
 }
 
 enum TrainingActivityPresentation {
+    private static let distanceKilometersFormatStyle = FloatingPointFormatStyle<Double>
+        .number
+        .precision(.fractionLength(1))
+        .locale(Locale(identifier: "ru_RU"))
+
     static func title(for activity: GarminActivity) -> String {
         let activityType = activity.activityType.lowercased()
         let normalizedName = activity.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -62,11 +67,12 @@ enum TrainingActivityPresentation {
         return "\(minutes) мин"
     }
 
-    static func distanceText(for meters: Double?) -> String {
-        guard let meters, meters >= 0 else { return "—" }
+    static func distanceText(forGarminCentimeters centimeters: Double?) -> String {
+        guard let centimeters, centimeters >= 0 else { return "—" }
+        let meters = centimeters / 100
         if meters >= 1_000 {
             let kilometers = meters / 1_000
-            return kilometers.rounded() == kilometers ? "\(Int(kilometers)) км" : "\(kilometers.formatted(.number.precision(.fractionLength(1)))) км"
+            return kilometers.rounded() == kilometers ? "\(Int(kilometers)) км" : "\(kilometers.formatted(distanceKilometersFormatStyle)) км"
         }
         return "\(Int(meters.rounded())) м"
     }

@@ -43,12 +43,16 @@ struct TrainingActivityListBuilderTests {
         #expect(TrainingActivityPresentation.title(for: activity(id: 9, type: "other", name: "Morning Rest Day")) == "Отдых")
     }
 
+    @Test func formatsGarminDistanceStoredInCentimeters() {
+        #expect(TrainingActivityPresentation.distanceText(forGarminCentimeters: 130_000) == "1,3 км")
+    }
+
     @Test func buildsNewestFirstCardsForDefaultWeekEndingAtLatestActivity() {
         let activities = [
-            activity(id: 1, type: "running", name: "Old", date: "2026-06-01", distance: 1000),
-            activity(id: 2, type: "cycling", name: "Latest", date: "2026-06-14", distance: 12000),
-            activity(id: 3, type: "lap_swimming", name: "Pool", date: "2026-06-08", distance: 800),
-            activity(id: 4, type: "walking", name: "Too old", date: "2026-06-07", distance: 500)
+            activity(id: 1, type: "running", name: "Old", date: "2026-06-01", distance: 100_000),
+            activity(id: 2, type: "cycling", name: "Latest", date: "2026-06-14", distance: 1_200_000),
+            activity(id: 3, type: "lap_swimming", name: "Pool", date: "2026-06-08", distance: 80_000),
+            activity(id: 4, type: "walking", name: "Too old", date: "2026-06-07", distance: 50_000)
         ]
 
         let cards = TrainingActivityListBuilder(calendar: calendar).buildCards(
@@ -65,9 +69,9 @@ struct TrainingActivityListBuilderTests {
 
     @Test func buildsCardsForCustomDateRangeInclusive() {
         let activities = [
-            activity(id: 1, type: "running", name: "Before", date: "2026-06-01", distance: 1000),
-            activity(id: 2, type: "running", name: "Inside", date: "2026-06-10", distance: 2000),
-            activity(id: 3, type: "running", name: "After", date: "2026-06-20", distance: 3000)
+            activity(id: 1, type: "running", name: "Before", date: "2026-06-01", distance: 100_000),
+            activity(id: 2, type: "running", name: "Inside", date: "2026-06-10", distance: 200_000),
+            activity(id: 3, type: "running", name: "After", date: "2026-06-20", distance: 300_000)
         ]
         let start = date("2026-06-09")
         let end = date("2026-06-10")
