@@ -84,6 +84,84 @@ struct TrainingActivityListBuilderTests {
         #expect(cards.map(\.id) == [2])
     }
 
+    @Test func typeCategoriesCombineCyclingVariantsAndUseRussianTitles() {
+        let categories = TrainingActivityTypeCategory.availableCategories(from: [
+            activity(id: 1, type: "cycling", name: "Outdoor"),
+            activity(id: 2, type: "indoor_cycling", name: "Indoor"),
+            activity(id: 3, type: "lap_swimming", name: "Pool")
+        ])
+
+        #expect(categories.map(\.title) == ["Бассейн", "Велик"])
+    }
+
+    @Test func activityTypeSelectionSupportsMultipleCategories() {
+        let cycling = activity(id: 1, type: "cycling", name: "Ride")
+        let pool = activity(id: 2, type: "lap_swimming", name: "Pool")
+        let selection = TrainingActivityTypeSelection(selected: [
+            TrainingActivityTypeCategory(activity: cycling)
+        ])
+
+        #expect(selection.includes(cycling))
+        #expect(!selection.includes(pool))
+    }
+
+    @Test func activityTypeSelectionTogglesAllOffAndBackOn() {
+        let categories = TrainingActivityTypeCategory.availableCategories(from: [
+            activity(id: 1, type: "cycling", name: "Ride"),
+            activity(id: 2, type: "lap_swimming", name: "Pool")
+        ])
+        let cycling = activity(id: 3, type: "cycling", name: "Another Ride")
+
+        let emptySelection = TrainingActivityTypeSelection.all.toggledAll(availableCategories: categories)
+
+        #expect(!emptySelection.isAll)
+        #expect(emptySelection.selectedCount == 0)
+        #expect(!emptySelection.includes(cycling))
+
+        let allSelection = emptySelection.toggledAll(availableCategories: categories)
+
+        #expect(allSelection.isAll)
+        #expect(allSelection.includes(cycling))
+    }
+
+    @Test func listBuilderFiltersByPeriodAndActivityTypes() {
+        let activities = [
+            activity(id: 1, type: "running", name: "Run", date: "2026-06-14"),
+            activity(id: 2, type: "cycling", name: "Ride", date: "2026-06-13"),
+            activity(id: 3, type: "cycling", name: "Old Ride", date: "2026-06-01")
+        ]
+        let selection = TrainingActivityTypeSelection(selected: [
+            TrainingActivityTypeCategory(activity: activities[1])
+        ])
+
+        let cards = TrainingActivityListBuilder(calendar: calendar).buildCards(
+            from: activities,
+            period: .preset(.oneWeek),
+            typeSelection: selection
+        )
+
+        #expect(cards.map(\.id) == [2])
+    }
+
+    @Test func recentCustomPeriodsKeepFiveAndMoveDuplicateToTop() {
+        let periods = (1...6).reduce(into: TrainingRecentCustomPeriods()) { result, day in
+            result.remember(
+                TrainingRecentCustomPeriod(
+                    start: date("2026-06-\(String(format: "%02d", day))"),
+                    end: date("2026-06-\(String(format: "%02d", day + 1))")
+                ),
+                calendar: calendar
+            )
+        }
+        var updated = periods
+        let duplicate = TrainingRecentCustomPeriod(start: date("2026-06-03"), end: date("2026-06-04"))
+
+        updated.remember(duplicate, calendar: calendar)
+
+        #expect(updated.items.count == 5)
+        #expect(updated.items.first == duplicate)
+    }
+
     private func activity(
         id: Int64,
         type: String,

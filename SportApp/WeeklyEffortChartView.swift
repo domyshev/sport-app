@@ -3,10 +3,10 @@ import SwiftUI
 struct WeeklyEffortChartView: View {
     let points: [WeeklyEffortPoint]
     @Binding var selectedPoint: WeeklyEffortPoint?
+    let chartScale: WeeklyEffortChartScale
 
     private let accent = Color(red: 0.0, green: 0.45, blue: 0.92)
     private let chartHeight: CGFloat = 250
-    private let pointSpacing: CGFloat = 34
     private let horizontalInset: CGFloat = 22
     private let leadingAxisInset: CGFloat = 42
     private let topPadding: CGFloat = 22
@@ -23,7 +23,11 @@ struct WeeklyEffortChartView: View {
             } else {
                 GeometryReader { proxy in
                     ScrollView(.horizontal, showsIndicators: false) {
-                        chartCanvas(width: chartWidth(minimumWidth: proxy.size.width), height: proxy.size.height)
+                        chartCanvas(
+                            width: chartWidth(minimumWidth: proxy.size.width),
+                            height: proxy.size.height,
+                            visibleWidth: proxy.size.width
+                        )
                             .frame(width: chartWidth(minimumWidth: proxy.size.width), height: proxy.size.height)
                     }
                 }
@@ -43,9 +47,13 @@ struct WeeklyEffortChartView: View {
             }
     }
 
-    private func chartCanvas(width: CGFloat, height: CGFloat) -> some View {
+    private func chartCanvas(width: CGFloat, height: CGFloat, visibleWidth: CGFloat) -> some View {
         let positions = pointPositions(width: width, height: height)
-        let xAxisLabels = WeeklyEffortChartAxisValues.xAxisLabels(for: points)
+        let xAxisLabels = WeeklyEffortChartAxisValues.xAxisLabels(
+            for: points,
+            visibleWidth: visibleWidth,
+            pointSpacing: chartScale.pointSpacing
+        )
         let yAxisLabels = WeeklyEffortChartAxisValues.yAxisLabels(maxValue: points.map(\.value).max() ?? 0)
 
         let canvas = ZStack(alignment: .topLeading) {
@@ -124,7 +132,7 @@ struct WeeklyEffortChartView: View {
     }
 
     private func chartWidth(minimumWidth: CGFloat) -> CGFloat {
-        max(leadingAxisInset + CGFloat(max(points.count - 1, 0)) * pointSpacing + horizontalInset * 2, minimumWidth)
+        max(leadingAxisInset + CGFloat(max(points.count - 1, 0)) * chartScale.pointSpacing + horizontalInset * 2, minimumWidth)
     }
 
     private func pointPositions(width: CGFloat, height: CGFloat) -> [CGPoint] {
@@ -132,7 +140,7 @@ struct WeeklyEffortChartView: View {
         let drawableHeight = max(height - topPadding - bottomPadding, 1)
 
         return points.enumerated().map { index, point in
-            let x = leadingAxisInset + horizontalInset + CGFloat(index) * pointSpacing
+            let x = leadingAxisInset + horizontalInset + CGFloat(index) * chartScale.pointSpacing
             let normalizedValue = point.value / maxValue
             let y = topPadding + drawableHeight * (1 - normalizedValue)
             return CGPoint(x: x, y: y)
@@ -230,7 +238,8 @@ struct WeeklyEffortChartView: View {
                 value: 7
             )
         ],
-        selectedPoint: .constant(nil)
+        selectedPoint: .constant(nil),
+        chartScale: .standard
     )
     .padding()
 }

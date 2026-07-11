@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 struct WeeklyEffortPoint: Identifiable, Equatable {
     let weekStart: Date
@@ -24,7 +25,7 @@ struct WeeklyEffortPoint: Identifiable, Equatable {
         formatter.calendar = WeeklyEffortCalculator.makeMondayFirstCalendar()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "dMMyy"
+        formatter.dateFormat = "dd/MM/yyyy"
         return formatter
     }()
 
@@ -45,17 +46,41 @@ struct WeeklyEffortXAxisLabel: Equatable {
 
 enum WeeklyEffortChartAxisValues {
     static func xAxisLabels(for points: [WeeklyEffortPoint]) -> [WeeklyEffortXAxisLabel] {
+        xAxisLabels(for: points, visibleWidth: 408, pointSpacing: WeeklyEffortChartScale.standard.pointSpacing)
+    }
+
+    static func xAxisLabels(
+        for points: [WeeklyEffortPoint],
+        visibleWidth: CGFloat,
+        pointSpacing: CGFloat
+    ) -> [WeeklyEffortXAxisLabel] {
         guard !points.isEmpty else {
             return []
         }
 
-        let labelCount = min(points.count, 4)
-        if labelCount == 1 {
-            return [WeeklyEffortXAxisLabel(index: 0, text: points[0].axisLabel)]
+        if points.count <= 4 {
+            return points.enumerated().map { index, point in
+                WeeklyEffortXAxisLabel(index: index, text: point.axisLabel)
+            }
         }
 
-        let indexes = (0..<labelCount).map { offset in
-            Int((Double(offset) * Double(points.count - 1) / Double(labelCount - 1)).rounded())
+        let safePointSpacing = max(pointSpacing, 1)
+        let minimumIndexSpacing = max(Int(ceil(visibleWidth / (3 * safePointSpacing))), 1)
+        let lastIndex = points.count - 1
+        var indexes: [Int] = []
+        var index = 0
+
+        while index <= lastIndex {
+            indexes.append(index)
+            index += minimumIndexSpacing
+        }
+
+        if indexes.last != lastIndex {
+            indexes.append(lastIndex)
+            while indexes.count >= 2,
+                  indexes[indexes.count - 1] - indexes[indexes.count - 2] < minimumIndexSpacing {
+                indexes.remove(at: indexes.count - 2)
+            }
         }
 
         return indexes.map { index in
@@ -68,6 +93,57 @@ enum WeeklyEffortChartAxisValues {
         return (0..<4).map { index in
             maximum * Double(index) / 3
         }
+    }
+}
+
+enum WeeklyEffortChartScale: Int, Codable, Equatable, CaseIterable {
+    case compact
+    case standard
+    case wide
+
+    var pointSpacing: CGFloat {
+        switch self {
+        case .compact:
+            return 22
+        case .standard:
+            return 34
+        case .wide:
+            return 52
+        }
+    }
+
+    var canZoomOut: Bool {
+        self != .compact
+    }
+
+    var canZoomIn: Bool {
+        self != .wide
+    }
+
+    func zoomedOut() -> Self {
+        switch self {
+        case .compact:
+            return .compact
+        case .standard:
+            return .compact
+        case .wide:
+            return .standard
+        }
+    }
+
+    func zoomedIn() -> Self {
+        switch self {
+        case .compact:
+            return .standard
+        case .standard:
+            return .wide
+        case .wide:
+            return .wide
+        }
+    }
+
+    func reset() -> Self {
+        .standard
     }
 }
 
@@ -86,9 +162,40 @@ struct WeeklyEffortCalculator {
     func calculate(from activities: [GarminActivity]) -> [WeeklyEffortPoint] {
         let activityDays = activities.map { calendar.startOfDay(for: Self.date(fromMilliseconds: $0.startTimeLocal)) }
         guard let firstActivityDay = activityDays.min(),
-              let lastActivityDay = activityDays.max(),
-              let firstWeekStart = firstCompleteWeekStart(from: firstActivityDay),
-              let lastWeekStart = lastCompleteWeekStart(from: lastActivityDay),
+              let lastActivityDay = activityDays.max()
+        else {
+            return []
+        }
+
+        return calculate(from: activities, firstDay: firstActivityDay, lastDay: lastActivityDay)
+    }
+
+    func calculate(
+        from activities: [GarminActivity],
+        period: TrainingPeriodSelection,
+        typeSelection: TrainingActivityTypeSelection
+    ) -> [WeeklyEffortPoint] {
+        guard let latestActivity = activities.max(by: { $0.startTimeLocal < $1.startTimeLocal }) else {
+            return []
+        }
+
+        let latestDate = Self.date(fromMilliseconds: latestActivity.startTimeLocal)
+        let range = period.dateRange(latestDate: latestDate, calendar: calendar)
+        let filteredActivities = activities.filter { activity in
+            let date = calendar.startOfDay(for: Self.date(fromMilliseconds: activity.startTimeLocal))
+            return range.contains(date) && typeSelection.includes(activity) && filter.includes(activity)
+        }
+
+        guard !filteredActivities.isEmpty else {
+            return []
+        }
+
+        return calculate(from: filteredActivities, firstDay: range.lowerBound, lastDay: range.upperBound)
+    }
+
+    private func calculate(from activities: [GarminActivity], firstDay: Date, lastDay: Date) -> [WeeklyEffortPoint] {
+        guard let firstWeekStart = firstCompleteWeekStart(from: firstDay),
+              let lastWeekStart = lastCompleteWeekStart(from: lastDay),
               firstWeekStart <= lastWeekStart
         else {
             return []

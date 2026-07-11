@@ -23,14 +23,18 @@ final class SportAppUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testPresetPeriodSelectionAppliesAfterTappingPreset() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        app.buttons["Настроить период"].tap()
+        XCTAssertTrue(app.buttons["3 месяца"].waitForExistence(timeout: 2))
+
+        app.buttons["3 месяца"].tap()
+
+        let selectedPeriod = app.staticTexts["SelectedPeriodTitle"]
+        XCTAssertTrue(selectedPeriod.waitForExistence(timeout: 2))
+        XCTAssertEqual(selectedPeriod.label, "3 месяца")
     }
 
     @MainActor

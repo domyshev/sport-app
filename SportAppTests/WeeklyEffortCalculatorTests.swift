@@ -48,6 +48,26 @@ struct WeeklyEffortCalculatorTests {
         #expect(points[0].value == 4)
     }
 
+    @Test func calculatesWeeklyEffortForSelectedPeriodAndTypes() {
+        let activities = [
+            activity(id: 1, date: "2025-06-16", activityType: "running", calories: 120, durationMinutes: 20),
+            activity(id: 2, date: "2025-06-17", activityType: "cycling", calories: 300, durationMinutes: 30),
+            activity(id: 3, date: "2025-06-23", activityType: "cycling", calories: 900, durationMinutes: 30)
+        ]
+        let selection = TrainingActivityTypeSelection(selected: [
+            TrainingActivityTypeCategory(activity: activities[1])
+        ])
+
+        let points = WeeklyEffortCalculator(filter: .default).calculate(
+            from: activities,
+            period: .custom(start: date("2025-06-16"), end: date("2025-06-22")),
+            typeSelection: selection
+        )
+
+        #expect(points.count == 1)
+        #expect(points[0].value == 10)
+    }
+
     private func activity(
         id: Int64,
         date: String,
@@ -78,4 +98,8 @@ struct WeeklyEffortCalculatorTests {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+
+    private func date(_ value: String) -> Date {
+        Self.isoDateFormatter.date(from: value)!
+    }
 }
