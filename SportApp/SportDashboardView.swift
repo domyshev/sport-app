@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SportDashboardView: View {
-    @State private var selectedTab: SportDashboardTab = .today
+    @State private var selectedTab: SportDashboardTab = .trainings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -14,9 +14,9 @@ struct SportDashboardView: View {
 
             Group {
                 switch selectedTab {
-                case .today:
-                    TodayEffortView()
-                case .history:
+                case .trainings:
+                    TrainingListView()
+                case .chart:
                     WeeklyEffortView()
                 }
             }
@@ -30,8 +30,8 @@ struct SportDashboardView: View {
 }
 
 private enum SportDashboardTab: String, CaseIterable, Identifiable {
-    case today = "Сегодня"
-    case history = "История"
+    case trainings = "Тренировки"
+    case chart = "График"
 
     var id: String { rawValue }
 }

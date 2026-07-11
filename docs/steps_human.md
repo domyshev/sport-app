@@ -623,3 +623,49 @@ NSWERANS
 
 Файл остался локально для Xcode, но теперь не будет попадать в коммиты.
 ```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Сделал и запушил текущий baseline отдельным коммитом 00cfa56 перед продолжением.
+
+Дальше написал спеку и план:
+- docs/superpowers/specs/2026-07-11-training-list-chart-axis-design.md
+- docs/superpowers/plans/2026-07-11-training-list-chart-axis.md
+
+Реализацию сделал мультиагентно: отдельные worker-агенты работали над доменной моделью списка тренировок, осями графика и UI вкладки тренировок. После них я провел интеграцию и поправил найденные расхождения.
+
+Что реализовано:
+- вкладка "Сегодня" переименована в "Тренировки";
+- вкладка "История" переименована в "График";
+- "Тренировки" показывает карточки активностей от новых к старым из bundled Garmin JSON;
+- карточки показывают название, расстояние, длительность и время старта;
+- open_water_swimming отображается как "Плавание Море";
+- lap_swimming отображается как "Бассейн";
+- cycling и indoor_cycling отображаются как "Велик";
+- Rest отображается как "Отдых";
+- у карточек есть маленькая шестеренка для выбора отображаемых полей по типу активности;
+- сверху есть icon-button периода, по умолчанию "1 неделя";
+- доступны периоды 1 неделя, 2 недели, месяц, 3 месяца, 6 месяцев, год и свой date range;
+- график получил 4 подписи по X в формате dMMyy и 4 подписи по Y.
+
+Проверки:
+- targeted тесты доменной модели списка тренировок прошли;
+- targeted тесты настроек полей карточек прошли;
+- targeted тесты осей графика прошли;
+- полный xcodebuild test -scheme SportApp -destination 'platform=iOS Simulator,name=iPhone Air' -derivedDataPath .temp/TestDerivedData завершился TEST SUCCEEDED;
+- Debug build для iPhone Air завершился BUILD SUCCEEDED;
+- приложение установлено и открыто в iPhone Air simulator;
+- скриншот вкладки "Тренировки" сохранен в .temp/sportapp-trainings-ready.png.
+
+Garmin-экспорт не трогал. SportApp/garmin_summarized_activities.json, from_garmin_official_export, .temp и *.xcuserstate игнорируются git.
+```

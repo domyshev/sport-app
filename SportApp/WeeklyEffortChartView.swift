@@ -8,7 +8,8 @@ struct WeeklyEffortChartView: View {
     private let chartHeight: CGFloat = 250
     private let pointSpacing: CGFloat = 34
     private let horizontalInset: CGFloat = 22
-    private let topPadding: CGFloat = 52
+    private let leadingAxisInset: CGFloat = 42
+    private let topPadding: CGFloat = 22
     private let bottomPadding: CGFloat = 34
     private let pointDiameter: CGFloat = 3
     private let hitDiameter: CGFloat = 28
@@ -27,16 +28,6 @@ struct WeeklyEffortChartView: View {
                     }
                 }
                 .frame(height: chartHeight)
-
-                if let first = points.first, let last = points.last {
-                    HStack {
-                        Text(first.tooltipStart)
-                        Spacer()
-                        Text(last.tooltipEnd)
-                    }
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.tertiary)
-                }
             }
         }
     }
@@ -54,9 +45,27 @@ struct WeeklyEffortChartView: View {
 
     private func chartCanvas(width: CGFloat, height: CGFloat) -> some View {
         let positions = pointPositions(width: width, height: height)
+        let xAxisLabels = WeeklyEffortChartAxisValues.xAxisLabels(for: points)
+        let yAxisLabels = WeeklyEffortChartAxisValues.yAxisLabels(maxValue: points.map(\.value).max() ?? 0)
 
         let canvas = ZStack(alignment: .topLeading) {
             gridLines(width: width, height: height)
+
+            ForEach(Array(yAxisLabels.enumerated()), id: \.offset) { index, value in
+                Text(axisValueText(value))
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: leadingAxisInset - 6, alignment: .trailing)
+                    .position(x: (leadingAxisInset - 6) / 2, y: yPosition(index: index, count: yAxisLabels.count, height: height))
+            }
+
+            ForEach(xAxisLabels, id: \.index) { label in
+                Text(label.text)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundStyle(.tertiary)
+                    .fixedSize()
+                    .position(x: positions[label.index].x, y: height - bottomPadding / 2)
+            }
 
             linePath(positions: positions)
                 .stroke(accent, style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
@@ -115,15 +124,15 @@ struct WeeklyEffortChartView: View {
     }
 
     private func chartWidth(minimumWidth: CGFloat) -> CGFloat {
-        max(CGFloat(max(points.count - 1, 0)) * pointSpacing + horizontalInset * 2, minimumWidth)
+        max(leadingAxisInset + CGFloat(max(points.count - 1, 0)) * pointSpacing + horizontalInset * 2, minimumWidth)
     }
 
     private func pointPositions(width: CGFloat, height: CGFloat) -> [CGPoint] {
-        let maxValue = max(points.map(\.value).max() ?? 1, 1)
+        let maxValue = max(points.map(\.value).max() ?? 0, 1)
         let drawableHeight = max(height - topPadding - bottomPadding, 1)
 
         return points.enumerated().map { index, point in
-            let x = horizontalInset + CGFloat(index) * pointSpacing
+            let x = leadingAxisInset + horizontalInset + CGFloat(index) * pointSpacing
             let normalizedValue = point.value / maxValue
             let y = topPadding + drawableHeight * (1 - normalizedValue)
             return CGPoint(x: x, y: y)
@@ -145,13 +154,26 @@ struct WeeklyEffortChartView: View {
 
     private func gridLines(width: CGFloat, height: CGFloat) -> some View {
         Path { path in
-            for fraction in [0.25, 0.5, 0.75] {
-                let y = topPadding + (height - topPadding - bottomPadding) * fraction
-                path.move(to: CGPoint(x: 0, y: y))
-                path.addLine(to: CGPoint(x: width, y: y))
+            for index in 0..<4 {
+                let y = yPosition(index: index, count: 4, height: height)
+                path.move(to: CGPoint(x: leadingAxisInset, y: y))
+                path.addLine(to: CGPoint(x: width - horizontalInset, y: y))
             }
         }
         .stroke(Color(.systemGray5), lineWidth: 1)
+    }
+
+    private func yPosition(index: Int, count: Int, height: CGFloat) -> CGFloat {
+        guard count > 1 else {
+            return height - bottomPadding
+        }
+
+        let fraction = CGFloat(index) / CGFloat(count - 1)
+        return height - bottomPadding - (height - topPadding - bottomPadding) * fraction
+    }
+
+    private func axisValueText(_ value: Double) -> String {
+        String(format: "%.0f", value)
     }
 
     private func tooltip(for point: WeeklyEffortPoint) -> some View {

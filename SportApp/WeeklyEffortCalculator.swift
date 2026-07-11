@@ -15,6 +15,19 @@ struct WeeklyEffortPoint: Identifiable, Equatable {
         Self.tooltipFormatter.string(from: weekEnd)
     }
 
+    var axisLabel: String {
+        Self.axisDateFormatter.string(from: weekStart)
+    }
+
+    static let axisDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = WeeklyEffortCalculator.makeMondayFirstCalendar()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "dMMyy"
+        return formatter
+    }()
+
     private static let tooltipFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = WeeklyEffortCalculator.makeMondayFirstCalendar()
@@ -23,6 +36,39 @@ struct WeeklyEffortPoint: Identifiable, Equatable {
         formatter.dateFormat = "MM/dd/yyyy"
         return formatter
     }()
+}
+
+struct WeeklyEffortXAxisLabel: Equatable {
+    let index: Int
+    let text: String
+}
+
+enum WeeklyEffortChartAxisValues {
+    static func xAxisLabels(for points: [WeeklyEffortPoint]) -> [WeeklyEffortXAxisLabel] {
+        guard !points.isEmpty else {
+            return []
+        }
+
+        let labelCount = min(points.count, 4)
+        if labelCount == 1 {
+            return [WeeklyEffortXAxisLabel(index: 0, text: points[0].axisLabel)]
+        }
+
+        let indexes = (0..<labelCount).map { offset in
+            Int((Double(offset) * Double(points.count - 1) / Double(labelCount - 1)).rounded())
+        }
+
+        return indexes.map { index in
+            WeeklyEffortXAxisLabel(index: index, text: points[index].axisLabel)
+        }
+    }
+
+    static func yAxisLabels(maxValue: Double) -> [Double] {
+        let maximum = max(maxValue, 0)
+        return (0..<4).map { index in
+            maximum * Double(index) / 3
+        }
+    }
 }
 
 struct WeeklyEffortCalculator {
