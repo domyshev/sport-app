@@ -1,5 +1,6 @@
 .DS_Store
 .temp/
 .superpowers/
+*.xcuserstate
 from_garmin_official_export/
 garmin_summarized_activities.json

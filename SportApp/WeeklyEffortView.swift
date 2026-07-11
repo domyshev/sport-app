@@ -9,22 +9,13 @@ struct WeeklyEffortView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Илья")
-                .font(.system(size: 44, weight: .bold))
-                .foregroundStyle(.primary)
-
             Text("ты тренируешься уже \(points.count) недель")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(.secondary)
-                .padding(.top, 8)
 
             WeeklyEffortChartView(points: points, selectedPoint: $selectedPoint)
                 .padding(.top, 28)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 26)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(.systemBackground))
         .task {
             loadPoints()
         }
