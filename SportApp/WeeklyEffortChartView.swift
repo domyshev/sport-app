@@ -5,7 +5,7 @@ struct WeeklyEffortChartView: View {
     @Binding var selectedPoint: WeeklyEffortPoint?
     let chartScale: WeeklyEffortChartScale
 
-    private let accent = Color(red: 0.0, green: 0.45, blue: 0.92)
+    private let palette = SportAppVisualStyle.palette
     private let chartHeight: CGFloat = 250
     private let horizontalInset: CGFloat = 22
     private let leadingAxisInset: CGFloat = 42
@@ -32,18 +32,28 @@ struct WeeklyEffortChartView: View {
                     }
                 }
                 .frame(height: chartHeight)
+                .background(Color(palette.panel).opacity(0.72), in: RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius))
+                .overlay {
+                    RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius)
+                        .stroke(Color(palette.panelStroke), lineWidth: 1)
+                }
+                .shadow(color: Color(palette.electricCyan).opacity(palette.panelGlowOpacity), radius: 16, x: 0, y: 8)
             }
         }
     }
 
     private var emptyChart: some View {
         RoundedRectangle(cornerRadius: 8)
-            .fill(Color(.secondarySystemBackground))
+            .fill(Color(palette.panel))
             .frame(height: chartHeight)
+            .overlay {
+                RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius)
+                    .stroke(Color(palette.panelStroke), lineWidth: 1)
+            }
             .overlay {
                 Text("Нет данных")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color(palette.secondaryText))
             }
     }
 
@@ -76,7 +86,14 @@ struct WeeklyEffortChartView: View {
             }
 
             linePath(positions: positions)
-                .stroke(accent, style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
+                .stroke(Color(palette.cyanGlow).opacity(palette.lineGlowOpacity), style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
+                .blur(radius: 6)
+
+            linePath(positions: positions)
+                .stroke(Color(palette.primaryText).opacity(0.9), style: StrokeStyle(lineWidth: 3.2, lineCap: .round, lineJoin: .round))
+
+            linePath(positions: positions)
+                .stroke(Color(palette.electricCyan), style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
 
             ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
                 pointHitArea(point: point)
@@ -112,9 +129,19 @@ struct WeeklyEffortChartView: View {
     }
 
     private func pointHitArea(point: WeeklyEffortPoint) -> some View {
-        ZStack {
+        let isSelected = selectedPoint == point
+        let pointColor = isSelected ? Color(palette.emberOrange) : Color(palette.electricCyan)
+
+        return ZStack {
             Circle()
-                .fill(accent)
+                .fill(pointColor.opacity(isSelected ? 0.38 : 0.22))
+                .frame(width: isSelected ? 18 : 12, height: isSelected ? 18 : 12)
+                .blur(radius: 3)
+            Circle()
+                .fill(Color(palette.primaryText))
+                .frame(width: isSelected ? 8 : 6, height: isSelected ? 8 : 6)
+            Circle()
+                .fill(pointColor)
                 .frame(width: pointDiameter, height: pointDiameter)
         }
         .frame(width: hitDiameter, height: hitDiameter)
@@ -168,7 +195,7 @@ struct WeeklyEffortChartView: View {
                 path.addLine(to: CGPoint(x: width - horizontalInset, y: y))
             }
         }
-        .stroke(Color(.systemGray5), lineWidth: 1)
+        .stroke(Color(palette.panelStroke).opacity(0.42), lineWidth: 1)
     }
 
     private func yPosition(index: Int, count: Int, height: CGFloat) -> CGFloat {
@@ -186,7 +213,7 @@ struct WeeklyEffortChartView: View {
 
     private func tooltip(for point: WeeklyEffortPoint) -> some View {
         VStack(spacing: 4) {
-            Text("Неделя")
+            Text(point.tooltipTitle)
                 .font(.system(size: 12, weight: .bold))
             Text(point.tooltipStart)
                 .font(.system(size: 12, weight: .regular))
@@ -197,8 +224,12 @@ struct WeeklyEffortChartView: View {
         .multilineTextAlignment(.center)
         .foregroundStyle(.white)
         .padding(.vertical, 8)
-        .background(Color(.darkGray).opacity(0.92), in: RoundedRectangle(cornerRadius: 8))
-        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
+        .background(Color(palette.background).opacity(0.96), in: RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius)
+                .stroke(Color(palette.emberOrange).opacity(0.7), lineWidth: 1)
+        }
+        .shadow(color: Color(palette.emberOrange).opacity(0.32), radius: 10, x: 0, y: 4)
     }
 
     private func tooltipPosition(for point: CGPoint, width: CGFloat) -> CGPoint {

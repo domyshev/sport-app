@@ -1,12 +1,43 @@
 import Foundation
 import CoreGraphics
 
+enum WeeklyEffortPointGranularity: Equatable {
+    case week
+    case day
+
+    var tooltipTitle: String {
+        switch self {
+        case .week:
+            return "Неделя"
+        case .day:
+            return "День"
+        }
+    }
+}
+
 struct WeeklyEffortPoint: Identifiable, Equatable {
     let weekStart: Date
     let weekEnd: Date
     let value: Double
+    let granularity: WeeklyEffortPointGranularity
 
     var id: Date { weekStart }
+
+    init(
+        weekStart: Date,
+        weekEnd: Date,
+        value: Double,
+        granularity: WeeklyEffortPointGranularity = .week
+    ) {
+        self.weekStart = weekStart
+        self.weekEnd = weekEnd
+        self.value = value
+        self.granularity = granularity
+    }
+
+    var tooltipTitle: String {
+        granularity.tooltipTitle
+    }
 
     var tooltipStart: String {
         Self.tooltipFormatter.string(from: weekStart)
@@ -193,6 +224,37 @@ struct WeeklyEffortCalculator {
         return calculate(from: filteredActivities, firstDay: range.lowerBound, lastDay: range.upperBound)
     }
 
+    func calculateDisplayPoints(
+        from activities: [TrainingActivity],
+        period: TrainingPeriodSelection,
+        typeSelection: TrainingActivityTypeSelection
+    ) -> [WeeklyEffortPoint] {
+        guard let latestActivity = activities.max(by: { $0.startDate < $1.startDate }) else {
+            return []
+        }
+
+        let range = period.dateRange(latestDate: latestActivity.startDate, calendar: calendar)
+        let filteredActivities = activities.filter { activity in
+            let date = calendar.startOfDay(for: activity.startDate)
+            return range.contains(date) && typeSelection.includes(activity) && filter.includes(activity)
+        }
+
+        guard !filteredActivities.isEmpty else {
+            return []
+        }
+
+        if inclusiveDayCount(from: range.lowerBound, to: range.upperBound) <= 14 {
+            return calculateDaily(from: filteredActivities, firstDay: range.lowerBound, lastDay: range.upperBound)
+        }
+
+        let weeklyPoints = calculate(from: filteredActivities, firstDay: range.lowerBound, lastDay: range.upperBound)
+        if !weeklyPoints.isEmpty {
+            return weeklyPoints
+        }
+
+        return calculateDaily(from: filteredActivities, firstDay: range.lowerBound, lastDay: range.upperBound)
+    }
+
     private func calculate(from activities: [TrainingActivity], firstDay: Date, lastDay: Date) -> [WeeklyEffortPoint] {
         guard let firstWeekStart = firstCompleteWeekStart(from: firstDay),
               let lastWeekStart = lastCompleteWeekStart(from: lastDay),
@@ -224,6 +286,31 @@ struct WeeklyEffortCalculator {
                 break
             }
             weekStart = nextWeekStart
+        }
+
+        return points
+    }
+
+    private func calculateDaily(from activities: [TrainingActivity], firstDay: Date, lastDay: Date) -> [WeeklyEffortPoint] {
+        let dailyAverages = dailyAverages(from: activities)
+        var points: [WeeklyEffortPoint] = []
+        var day = calendar.startOfDay(for: firstDay)
+        let finalDay = calendar.startOfDay(for: lastDay)
+
+        while day <= finalDay {
+            points.append(
+                WeeklyEffortPoint(
+                    weekStart: day,
+                    weekEnd: day,
+                    value: dailyAverages[day] ?? 0,
+                    granularity: .day
+                )
+            )
+
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else {
+                break
+            }
+            day = nextDay
         }
 
         return points
@@ -269,6 +356,13 @@ struct WeeklyEffortCalculator {
         }
 
         return calories / durationMinutes
+    }
+
+    private func inclusiveDayCount(from start: Date, to end: Date) -> Int {
+        let startDay = calendar.startOfDay(for: start)
+        let endDay = calendar.startOfDay(for: end)
+        let days = calendar.dateComponents([.day], from: startDay, to: endDay).day ?? 0
+        return max(days + 1, 1)
     }
 
     private func firstCompleteWeekStart(from firstDay: Date) -> Date? {

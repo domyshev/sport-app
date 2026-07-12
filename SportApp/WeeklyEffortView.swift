@@ -35,7 +35,7 @@ struct WeeklyEffortView: View {
     }
 
     private var points: [WeeklyEffortPoint] {
-        calculator.calculate(
+        calculator.calculateDisplayPoints(
             from: activities,
             period: selectedPeriod,
             typeSelection: selectedTypes

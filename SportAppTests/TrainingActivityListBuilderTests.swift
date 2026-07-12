@@ -47,6 +47,14 @@ struct TrainingActivityListBuilderTests {
         #expect(TrainingActivityPresentation.distanceText(forMeters: 1_300) == "1,3 км")
     }
 
+    @Test func formatsRecordCountForTrainingListChip() {
+        #expect(TrainingRecordCountText.text(for: 0) == "0 записей")
+        #expect(TrainingRecordCountText.text(for: 1) == "1 запись")
+        #expect(TrainingRecordCountText.text(for: 2) == "2 записи")
+        #expect(TrainingRecordCountText.text(for: 5) == "5 записей")
+        #expect(TrainingRecordCountText.text(for: 21) == "21 запись")
+    }
+
     @Test func buildsNewestFirstCardsForDefaultWeekEndingAtLatestActivity() {
         let activities = [
             activity(id: 1, type: "running", name: "Old", date: "2026-06-01", distance: 1_000),

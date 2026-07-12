@@ -22,27 +22,29 @@ struct SportDashboardView: View {
     private let garminImporter = GarminOfficialExportImporter()
     private let healthSource = HealthKitTrainingActivitySource()
     private let calendar = WeeklyEffortCalculator.makeMondayFirstCalendar()
+    private let palette = SportAppVisualStyle.palette
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center) {
                 Text("Илья")
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(palette.primaryText), Color(palette.cyanGlow)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
 
                 Spacer()
 
-                Button {
+                NeonIconButton(
+                    systemName: "gearshape",
+                    accessibilityLabel: "Настройки данных"
+                ) {
                     isShowingSettingsSheet = true
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 17, weight: .semibold))
-                        .frame(width: 34, height: 34)
-                        .background(Color(.secondarySystemBackground), in: Circle())
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.primary)
-                .accessibilityLabel("Настройки данных")
             }
 
             SportDashboardTabBar(selectedTab: $selectedTab)
@@ -74,7 +76,8 @@ struct SportDashboardView: View {
         .padding(.horizontal, 18)
         .padding(.top, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(.systemBackground))
+        .background(SportAppBackground())
+        .preferredColorScheme(.dark)
         .sheet(isPresented: $isShowingPeriodSheet) {
             TrainingPeriodSelectionView(
                 selection: $selectedPeriod,
@@ -129,13 +132,13 @@ struct SportDashboardView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(selectedPeriod.title(calendar: calendar))
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color(palette.primaryText))
                     .lineLimit(1)
                     .accessibilityIdentifier("SelectedPeriodTitle")
 
                 Text(typeSummary)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Color(palette.secondaryText))
                     .lineLimit(1)
             }
             .contentShape(Rectangle())
@@ -145,31 +148,29 @@ struct SportDashboardView: View {
 
             Spacer(minLength: 8)
 
-            Button {
+            NeonIconButton(
+                systemName: "calendar",
+                accessibilityLabel: "Настроить период"
+            ) {
                 isShowingPeriodSheet = true
-            } label: {
-                Image(systemName: "calendar")
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(width: 34, height: 34)
-                    .background(Color(.secondarySystemBackground), in: Circle())
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
-            .accessibilityLabel("Настроить период")
 
-            Button {
+            NeonIconButton(
+                systemName: "line.3.horizontal.decrease.circle",
+                accessibilityLabel: "Фильтр типов тренировок"
+            ) {
                 isShowingTypeSheet = true
-            } label: {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                    .font(.system(size: 17, weight: .semibold))
-                    .frame(width: 34, height: 34)
-                    .background(Color(.secondarySystemBackground), in: Circle())
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
-            .accessibilityLabel("Фильтр типов тренировок")
         }
         .frame(minHeight: 38)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(palette.panel), in: RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius)
+                .stroke(Color(palette.panelStroke), lineWidth: 1)
+        }
+        .shadow(color: Color(palette.electricCyan).opacity(palette.panelGlowOpacity), radius: 16, x: 0, y: 8)
     }
 
     private var typeSummary: String {
@@ -268,10 +269,12 @@ private enum SportDashboardTab: String, CaseIterable, Identifiable {
 
 private struct SportDashboardTabBar: View {
     @Binding var selectedTab: SportDashboardTab
+    private let palette = SportAppVisualStyle.palette
 
     var body: some View {
         HStack(spacing: 8) {
             ForEach(SportDashboardTab.allCases) { tab in
+                let isSelected = selectedTab == tab
                 Button {
                     selectedTab = tab
                 } label: {
@@ -279,15 +282,67 @@ private struct SportDashboardTabBar: View {
                         .font(.system(size: 15, weight: .semibold))
                         .frame(height: 34)
                         .padding(.horizontal, 16)
-                        .foregroundStyle(selectedTab == tab ? .white : .secondary)
+                        .foregroundStyle(isSelected ? Color(palette.primaryText) : Color(palette.secondaryText))
                         .background {
-                            Capsule()
-                                .fill(selectedTab == tab ? Color.accentColor : Color(.secondarySystemBackground))
+                            if isSelected {
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color(palette.electricCyan).opacity(0.9),
+                                                Color(palette.panel).opacity(0.95)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                            } else {
+                                Capsule()
+                                    .fill(Color(palette.panel).opacity(0.72))
+                            }
                         }
+                        .overlay {
+                            Capsule()
+                                .stroke(
+                                    isSelected ? Color(palette.cyanGlow).opacity(0.8) : Color(palette.panelStroke),
+                                    lineWidth: 1
+                                )
+                        }
+                        .shadow(
+                            color: isSelected ? Color(palette.electricCyan).opacity(0.34) : .clear,
+                            radius: 12,
+                            x: 0,
+                            y: 5
+                        )
                 }
                 .buttonStyle(.plain)
             }
         }
+    }
+}
+
+private struct NeonIconButton: View {
+    let systemName: String
+    let accessibilityLabel: String
+    let action: () -> Void
+
+    private let palette = SportAppVisualStyle.palette
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: 36, height: 36)
+                .foregroundStyle(Color(palette.primaryText))
+                .background(Color(palette.panel).opacity(0.9), in: Circle())
+                .overlay {
+                    Circle()
+                        .stroke(Color(palette.panelStroke), lineWidth: 1)
+                }
+                .shadow(color: Color(palette.electricCyan).opacity(palette.panelGlowOpacity), radius: 10, x: 0, y: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
     }
 }
 

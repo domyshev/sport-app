@@ -1495,3 +1495,219 @@ NSWERANS
 - в разделе тренировки выводить кол-во записей выше записей
 - график не отображается для коротких периодов
 ```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Первая часть выполнена: текущая HealthKit/local-store версия закоммичена и запушена.
+
+Коммит: 74209d8 Add HealthKit-backed training store
+Ветка: codex/healthkit-local-store
+Remote: origin/codex/healthkit-local-store
+
+Перед коммитом проверено:
+- xcodebuild test -scheme SportApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath .temp/TDDDerivedData -> TEST SUCCEEDED;
+- git diff --check чистый;
+- git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+
+Для второй части предложен короткий дизайн: в Тренировки показывать счетчик отфильтрованных записей текущего периода/типов над списком; в График для периодов без полной недели понедельник-воскресенье показывать понятное пустое состояние вместо пустого canvas. Жду подтверждения перед реализацией через тесты.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 49    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+да счетчик можно поместить в красивый чипик. а график пусть уж тогда будет адаптабельным под количество данных и сам подстраивает кол-во точек. наверное существуют лучшие практики в этом смысле
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Сделано.
+
+В разделе Тренировки над списком добавлен компактный чип со счетчиком отфильтрованных записей текущего периода и выбранных типов. Склонение русское: 1 запись, 2 записи, 5 записей.
+
+График теперь использует display-адаптацию: строгий недельный расчет сохранен для длинных периодов, а для коротких диапазонов до 14 дней график строит дневные точки. Если внутри короткого периода в какой-то день нет тренировки, точка остается с нулем, чтобы линия не теряла временной контекст. Тултип для таких точек показывает "День", а для недельных точек остается "Неделя".
+
+TDD-проверка:
+- RED: targeted tests сначала падали из-за отсутствующих TrainingRecordCountText и calculateDisplayPoints;
+- GREEN: targeted tests TrainingActivityListBuilderTests и WeeklyEffortCalculatorTests прошли.
+
+Финальная проверка:
+- xcodebuild test -scheme SportApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath .temp/TDDDerivedData -> TEST SUCCEEDED;
+- xcodebuild build -scheme SportApp -configuration Debug -destination 'generic/platform=iOS' -derivedDataPath .temp/DeviceBuild -allowProvisioningUpdates -> BUILD SUCCEEDED;
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+
+Эти новые правки пока не коммитил и не пушил.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 50    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+залей на iphone обновление. а перед этим сделай интерфейс более интересным в стиле иконки нашего приложения.
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Предлагаю дизайн перед реализацией.
+
+Стиль берем из иконки приложения: темный глубокий сине-черный фон, неоновая голубая линия как главный акцент, мягкие синие панели/чипы, теплый оранжевый акцент только для активной точки/важного действия.
+
+Что поменять:
+- главный экран сделать темным, с едва заметным radial/linear синим светом вверху;
+- "Илья", вкладки, фильтры и счетчик записей оформить в более выразительные capsule/chip элементы;
+- активную вкладку подсветить неоном, неактивные оставить приглушенными;
+- карточки тренировок сделать темными, с тонкой синей обводкой/свечением и маленьким цветным индикатором типа тренировки;
+- график сделать ближе к иконке: голубая линия с мягким glow, точки с бело-голубым центром, выбранная точка с оранжевым акцентом;
+- кнопки масштаба и настройки оставить компактными, но перевести в тот же неоновый стиль.
+
+Я бы не добавлял тяжелые анимации и декоративные пятна: приложение остается аналитическим, просто выглядит более фирменно и живо.
+
+Подтверди, что делаем именно этот вариант, и я внесу UI-правки, прогоню тесты/сборку и залью обновление на iPhone.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 51    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+да
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Сделал визуальное обновление в стиле иконки приложения и залил сборку на iPhone.
+
+Что изменилось:
+- добавлена общая визуальная палитра приложения: темный фон, cyan glow, теплый оранжевый акцент;
+- главный экран, вкладки, фильтр периода/типов и кнопки переведены в единый неоновый стиль;
+- карточки тренировок получили темные панели, тонкую синюю обводку и цветную полосу по типу тренировки;
+- чип количества записей стал визуально заметнее;
+- график получил светящуюся голубую линию, более живые точки и оранжевый акцент выбранной точки.
+
+Проверка:
+- xcodebuild test -scheme SportApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath .temp/TDDDerivedData -only-testing:SportAppTests/SportAppVisualStyleTests -> TEST SUCCEEDED;
+- xcodebuild test -scheme SportApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath .temp/TDDDerivedData -> TEST SUCCEEDED;
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+
+Заливка на iPhone:
+- xcodebuild build под устройство truth / iPhone 15 Pro Max -> BUILD SUCCEEDED;
+- приложение установлено на iPhone с bundle id com.domyshev.sportapp;
+- автоматический запуск не прошел, потому что iPhone был заблокирован: devicectl вернул Locked. Сама новая сборка уже установлена, можно открыть SportApp вручную после разблокировки или повторить запуск командой.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 52    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+круто. если еще не скомитил то комить с месседжем что это первый работающий вариант приложения! можешь назначить версию 0.1 alpha или как это делается? и указать в комите ее тоже и не только в комите - как принято
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Сделано.
+
+Версию оформил как iOS-compatible 0.1.0 build 1, а alpha-статус добавил отдельными ключами в Info.plist:
+- CFBundleShortVersionString = 0.1.0;
+- CFBundleVersion = 1;
+- SportAppReleaseName = 0.1.0 alpha;
+- SportAppReleaseStage = alpha.
+
+Также создан локальный git tag v0.1.0-alpha.1, потому что для pre-release версий это привычная форма.
+
+Перед коммитом проверено:
+- plutil -lint Config/SportApp-Info.plist -> OK;
+- xcodebuild test -scheme SportApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath .temp/TDDDerivedData -> TEST SUCCEEDED;
+- xcodebuild build -scheme SportApp -configuration Debug -destination 'generic/platform=iOS' -derivedDataPath .temp/DeviceBuild -allowProvisioningUpdates -> BUILD SUCCEEDED;
+- собранный SportApp.app содержит CFBundleShortVersionString 0.1.0, CFBundleVersion 1, SportAppReleaseName 0.1.0 alpha;
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+
+Коммит: 0.1.0-alpha.1: первый работающий вариант приложения!
+```

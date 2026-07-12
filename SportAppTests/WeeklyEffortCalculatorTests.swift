@@ -68,6 +68,25 @@ struct WeeklyEffortCalculatorTests {
         #expect(points[0].value == 10)
     }
 
+    @Test func displayPointsUseDailyGranularityForShortPeriods() {
+        let activities = [
+            activity(id: 1, date: "2025-06-18", activityType: "running", calories: 120, durationMinutes: 20),
+            activity(id: 2, date: "2025-06-20", activityType: "running", calories: 90, durationMinutes: 30)
+        ]
+
+        let points = WeeklyEffortCalculator(filter: .default).calculateDisplayPoints(
+            from: activities,
+            period: .custom(start: date("2025-06-18"), end: date("2025-06-20")),
+            typeSelection: .all
+        )
+
+        #expect(points.count == 3)
+        #expect(points.map(\.tooltipTitle) == ["День", "День", "День"])
+        #expect(points.map(\.tooltipStart) == ["06/18/2025", "06/19/2025", "06/20/2025"])
+        #expect(points.map(\.tooltipEnd) == ["06/18/2025", "06/19/2025", "06/20/2025"])
+        #expect(points.map(\.value) == [6, 0, 3])
+    }
+
     private func activity(
         id: Int64,
         date: String,

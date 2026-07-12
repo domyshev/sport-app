@@ -20,6 +20,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>SportAppReleaseName</key>
+	<string>0.1.0 alpha</string>
+	<key>SportAppReleaseStage</key>
+	<string>alpha</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>NSHealthShareUsageDescription</key>

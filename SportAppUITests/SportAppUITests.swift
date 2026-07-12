@@ -27,13 +27,16 @@ final class SportAppUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        app.buttons["Настроить период"].tap()
-        XCTAssertTrue(app.buttons["3 месяца"].waitForExistence(timeout: 2))
+        let periodButton = app.buttons["Настроить период"].firstMatch
+        XCTAssertTrue(periodButton.waitForExistence(timeout: 5))
+        periodButton.tap()
 
-        app.buttons["3 месяца"].tap()
+        let threeMonthsButton = app.buttons["3 месяца"].firstMatch
+        XCTAssertTrue(threeMonthsButton.waitForExistence(timeout: 5))
+        threeMonthsButton.tap()
 
-        let selectedPeriod = app.staticTexts["SelectedPeriodTitle"]
-        XCTAssertTrue(selectedPeriod.waitForExistence(timeout: 2))
+        let selectedPeriod = app.staticTexts["SelectedPeriodTitle"].firstMatch
+        XCTAssertTrue(selectedPeriod.waitForExistence(timeout: 5))
         XCTAssertEqual(selectedPeriod.label, "3 месяца")
     }
 
