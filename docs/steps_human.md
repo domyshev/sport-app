@@ -985,6 +985,40 @@ NSWERANS
 ◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
 ◆░░░░░░░░░░░░░░◆
 ◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 41    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+закомить и запуш
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Push снова не прошел из-за GitHub SSH-доступа: git@github.com: Permission denied (publickey).
+
+Локальные коммиты уже есть и готовы к отправке. После восстановления GitHub SSH-ключа нужно выполнить git push origin main.
+
+Проверил, что .temp, from_garmin_official_export и garmin_summarized_activities.json игнорируются git; новые файлы с тренировочными данными не создавались.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
 ◆    шаг 40    ◆
 ◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
 ◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
