@@ -30,18 +30,24 @@ struct TodayEffortCalculatorTests {
         sportType: String? = "CYCLING",
         calories: Double?,
         durationMinutes: Double
-    ) -> GarminActivity {
+    ) -> TrainingActivity {
         let start = Self.isoDateFormatter.date(from: date)!
-        return GarminActivity(
-            activityId: id,
+        return TrainingActivity(
+            id: uuid(id),
             name: name,
             activityType: activityType,
             sportType: sportType,
-            startTimeLocal: start.timeIntervalSince1970 * 1000,
-            startTimeGmt: start.timeIntervalSince1970 * 1000,
-            duration: durationMinutes * 60 * 1000,
-            calories: calories
+            startDate: start,
+            durationSeconds: durationMinutes * 60,
+            caloriesKilocalories: calories,
+            distanceMeters: nil,
+            primarySource: .garminOfficialExport,
+            sourceReferences: [.init(source: .garminOfficialExport, id: "\(id)")]
         )
+    }
+
+    private func uuid(_ value: Int64) -> UUID {
+        UUID(uuidString: "00000000-0000-0000-0000-\(String(format: "%012lld", value))")!
     }
 
     private static let isoDateFormatter: DateFormatter = {

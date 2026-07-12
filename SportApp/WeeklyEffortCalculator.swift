@@ -159,8 +159,8 @@ struct WeeklyEffortCalculator {
         self.calendar = calendar
     }
 
-    func calculate(from activities: [GarminActivity]) -> [WeeklyEffortPoint] {
-        let activityDays = activities.map { calendar.startOfDay(for: Self.date(fromMilliseconds: $0.startTimeLocal)) }
+    func calculate(from activities: [TrainingActivity]) -> [WeeklyEffortPoint] {
+        let activityDays = activities.map { calendar.startOfDay(for: $0.startDate) }
         guard let firstActivityDay = activityDays.min(),
               let lastActivityDay = activityDays.max()
         else {
@@ -171,18 +171,18 @@ struct WeeklyEffortCalculator {
     }
 
     func calculate(
-        from activities: [GarminActivity],
+        from activities: [TrainingActivity],
         period: TrainingPeriodSelection,
         typeSelection: TrainingActivityTypeSelection
     ) -> [WeeklyEffortPoint] {
-        guard let latestActivity = activities.max(by: { $0.startTimeLocal < $1.startTimeLocal }) else {
+        guard let latestActivity = activities.max(by: { $0.startDate < $1.startDate }) else {
             return []
         }
 
-        let latestDate = Self.date(fromMilliseconds: latestActivity.startTimeLocal)
+        let latestDate = latestActivity.startDate
         let range = period.dateRange(latestDate: latestDate, calendar: calendar)
         let filteredActivities = activities.filter { activity in
-            let date = calendar.startOfDay(for: Self.date(fromMilliseconds: activity.startTimeLocal))
+            let date = calendar.startOfDay(for: activity.startDate)
             return range.contains(date) && typeSelection.includes(activity) && filter.includes(activity)
         }
 
@@ -193,7 +193,7 @@ struct WeeklyEffortCalculator {
         return calculate(from: filteredActivities, firstDay: range.lowerBound, lastDay: range.upperBound)
     }
 
-    private func calculate(from activities: [GarminActivity], firstDay: Date, lastDay: Date) -> [WeeklyEffortPoint] {
+    private func calculate(from activities: [TrainingActivity], firstDay: Date, lastDay: Date) -> [WeeklyEffortPoint] {
         guard let firstWeekStart = firstCompleteWeekStart(from: firstDay),
               let lastWeekStart = lastCompleteWeekStart(from: lastDay),
               firstWeekStart <= lastWeekStart
@@ -238,7 +238,7 @@ struct WeeklyEffortCalculator {
         return calendar
     }
 
-    private func dailyAverages(from activities: [GarminActivity]) -> [Date: Double] {
+    private func dailyAverages(from activities: [TrainingActivity]) -> [Date: Double] {
         let valuesByDay = activities.reduce(into: [Date: [Double]]()) { result, activity in
             guard filter.includes(activity),
                   let value = effortValue(for: activity)
@@ -246,7 +246,7 @@ struct WeeklyEffortCalculator {
                 return
             }
 
-            let day = calendar.startOfDay(for: Self.date(fromMilliseconds: activity.startTimeLocal))
+            let day = calendar.startOfDay(for: activity.startDate)
             result[day, default: []].append(value)
         }
 
@@ -255,15 +255,15 @@ struct WeeklyEffortCalculator {
         }
     }
 
-    private func effortValue(for activity: GarminActivity) -> Double? {
-        guard let calories = activity.calories,
-              let duration = activity.duration,
-              duration > 0
+    private func effortValue(for activity: TrainingActivity) -> Double? {
+        guard let calories = activity.caloriesKilocalories,
+              let durationSeconds = activity.durationSeconds,
+              durationSeconds > 0
         else {
             return nil
         }
 
-        let durationMinutes = duration / 60_000
+        let durationMinutes = durationSeconds / 60
         guard durationMinutes > 0 else {
             return nil
         }
@@ -295,9 +295,5 @@ struct WeeklyEffortCalculator {
         }
 
         return calendar.date(byAdding: .day, value: -7, to: containingWeekStart)
-    }
-
-    private static func date(fromMilliseconds milliseconds: Double) -> Date {
-        Date(timeIntervalSince1970: milliseconds / 1000)
     }
 }

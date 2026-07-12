@@ -3,7 +3,8 @@ import SwiftUI
 struct TodayEffortView: View {
     @State private var summary: TodayEffortSummary = .empty
 
-    private let loader = GarminActivitiesLoader()
+    private let store = LocalTrainingActivityStore()
+    private let garminImporter = GarminOfficialExportImporter()
     private let calculator = TodayEffortCalculator()
 
     var body: some View {
@@ -45,11 +46,20 @@ struct TodayEffortView: View {
 
     private func loadSummary() {
         do {
-            let activities = try loader.load()
+            let activities = try loadedActivities()
             summary = calculator.calculate(from: activities)
         } catch {
             summary = .empty
         }
+    }
+
+    private func loadedActivities() throws -> [TrainingActivity] {
+        let storedActivities = try store.loadActivities()
+        if !storedActivities.isEmpty {
+            return storedActivities
+        }
+
+        return try garminImporter.importBundledActivities()
     }
 
     private var numberFormatter: NumberFormatter {

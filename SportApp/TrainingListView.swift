@@ -4,7 +4,7 @@ struct TrainingListView: View {
     @State private var preferences = TrainingActivityFieldPreferences()
     @AppStorage("trainingActivityFieldPreferences") private var preferencesData: Data = Data()
 
-    let activities: [GarminActivity]
+    let activities: [TrainingActivity]
     let selectedPeriod: TrainingPeriodSelection
     let selectedTypes: TrainingActivityTypeSelection
 

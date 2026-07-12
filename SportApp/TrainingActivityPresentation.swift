@@ -12,7 +12,7 @@ enum TrainingActivityDisplayField: String, CaseIterable, Codable, Identifiable {
 }
 
 struct TrainingActivityCardModel: Identifiable, Equatable {
-    let id: Int64
+    let id: UUID
     let activityType: String
     let title: String
     let distanceText: String
@@ -27,7 +27,7 @@ enum TrainingActivityPresentation {
         .precision(.fractionLength(1))
         .locale(Locale(identifier: "ru_RU"))
 
-    static func title(for activity: GarminActivity) -> String {
+    static func title(for activity: TrainingActivity) -> String {
         let activityType = activity.activityType.lowercased()
         let normalizedName = activity.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
@@ -57,9 +57,9 @@ enum TrainingActivityPresentation {
         }
     }
 
-    static func durationText(for milliseconds: Double?) -> String {
-        guard let milliseconds, milliseconds > 0 else { return "—" }
-        let totalMinutes = Int((milliseconds / 60_000).rounded())
+    static func durationText(forSeconds seconds: Double?) -> String {
+        guard let seconds, seconds > 0 else { return "—" }
+        let totalMinutes = Int((seconds / 60).rounded())
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
         if hours > 0 && minutes > 0 { return "\(hours) ч \(minutes) мин" }
@@ -67,9 +67,8 @@ enum TrainingActivityPresentation {
         return "\(minutes) мин"
     }
 
-    static func distanceText(forGarminCentimeters centimeters: Double?) -> String {
-        guard let centimeters, centimeters >= 0 else { return "—" }
-        let meters = centimeters / 100
+    static func distanceText(forMeters meters: Double?) -> String {
+        guard let meters, meters >= 0 else { return "—" }
         if meters >= 1_000 {
             let kilometers = meters / 1_000
             return kilometers.rounded() == kilometers ? "\(Int(kilometers)) км" : "\(kilometers.formatted(distanceKilometersFormatStyle)) км"
@@ -77,12 +76,12 @@ enum TrainingActivityPresentation {
         return "\(Int(meters.rounded())) м"
     }
 
-    static func startTimeText(for milliseconds: Double) -> String {
+    static func startTimeText(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ru_RU")
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "d MMM, HH:mm"
-        return formatter.string(from: Date(timeIntervalSince1970: milliseconds / 1_000))
+        return formatter.string(from: date)
     }
 
     static func caloriesText(for calories: Double?) -> String {

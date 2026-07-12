@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WeeklyEffortView: View {
-    let activities: [GarminActivity]
+    let activities: [TrainingActivity]
     let selectedPeriod: TrainingPeriodSelection
     let selectedPeriodTitle: String
     let selectedTypes: TrainingActivityTypeSelection

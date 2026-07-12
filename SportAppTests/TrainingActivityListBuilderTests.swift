@@ -43,16 +43,16 @@ struct TrainingActivityListBuilderTests {
         #expect(TrainingActivityPresentation.title(for: activity(id: 9, type: "other", name: "Morning Rest Day")) == "Отдых")
     }
 
-    @Test func formatsGarminDistanceStoredInCentimeters() {
-        #expect(TrainingActivityPresentation.distanceText(forGarminCentimeters: 130_000) == "1,3 км")
+    @Test func formatsDistanceStoredInMeters() {
+        #expect(TrainingActivityPresentation.distanceText(forMeters: 1_300) == "1,3 км")
     }
 
     @Test func buildsNewestFirstCardsForDefaultWeekEndingAtLatestActivity() {
         let activities = [
-            activity(id: 1, type: "running", name: "Old", date: "2026-06-01", distance: 100_000),
-            activity(id: 2, type: "cycling", name: "Latest", date: "2026-06-14", distance: 1_200_000),
-            activity(id: 3, type: "lap_swimming", name: "Pool", date: "2026-06-08", distance: 80_000),
-            activity(id: 4, type: "walking", name: "Too old", date: "2026-06-07", distance: 50_000)
+            activity(id: 1, type: "running", name: "Old", date: "2026-06-01", distance: 1_000),
+            activity(id: 2, type: "cycling", name: "Latest", date: "2026-06-14", distance: 12_000),
+            activity(id: 3, type: "lap_swimming", name: "Pool", date: "2026-06-08", distance: 800),
+            activity(id: 4, type: "walking", name: "Too old", date: "2026-06-07", distance: 500)
         ]
 
         let cards = TrainingActivityListBuilder(calendar: calendar).buildCards(
@@ -60,7 +60,7 @@ struct TrainingActivityListBuilderTests {
             period: .preset(.oneWeek)
         )
 
-        #expect(cards.map(\.id) == [2, 3])
+        #expect(cards.map(\.id) == [uuid(2), uuid(3)])
         #expect(cards[0].title == "Велик")
         #expect(cards[0].distanceText == "12 км")
         #expect(cards[1].title == "Бассейн")
@@ -69,9 +69,9 @@ struct TrainingActivityListBuilderTests {
 
     @Test func buildsCardsForCustomDateRangeInclusive() {
         let activities = [
-            activity(id: 1, type: "running", name: "Before", date: "2026-06-01", distance: 100_000),
-            activity(id: 2, type: "running", name: "Inside", date: "2026-06-10", distance: 200_000),
-            activity(id: 3, type: "running", name: "After", date: "2026-06-20", distance: 300_000)
+            activity(id: 1, type: "running", name: "Before", date: "2026-06-01", distance: 1_000),
+            activity(id: 2, type: "running", name: "Inside", date: "2026-06-10", distance: 2_000),
+            activity(id: 3, type: "running", name: "After", date: "2026-06-20", distance: 3_000)
         ]
         let start = date("2026-06-09")
         let end = date("2026-06-10")
@@ -81,7 +81,7 @@ struct TrainingActivityListBuilderTests {
             period: .custom(start: start, end: end)
         )
 
-        #expect(cards.map(\.id) == [2])
+        #expect(cards.map(\.id) == [uuid(2)])
     }
 
     @Test func typeCategoriesCombineCyclingVariantsAndUseRussianTitles() {
@@ -140,7 +140,7 @@ struct TrainingActivityListBuilderTests {
             typeSelection: selection
         )
 
-        #expect(cards.map(\.id) == [2])
+        #expect(cards.map(\.id) == [uuid(2)])
     }
 
     @Test func recentCustomPeriodsKeepFiveAndMoveDuplicateToTop() {
@@ -169,19 +169,23 @@ struct TrainingActivityListBuilderTests {
         date: String = "2026-06-14",
         distance: Double? = nil,
         durationMinutes: Double = 45
-    ) -> GarminActivity {
-        let timestamp = self.date(date).timeIntervalSince1970 * 1000
-        return GarminActivity(
-            activityId: id,
+    ) -> TrainingActivity {
+        TrainingActivity(
+            id: uuid(id),
             name: name,
             activityType: type,
             sportType: nil,
-            startTimeLocal: timestamp,
-            startTimeGmt: timestamp,
-            duration: durationMinutes * 60_000,
-            calories: 300,
-            distance: distance
+            startDate: self.date(date),
+            durationSeconds: durationMinutes * 60,
+            caloriesKilocalories: 300,
+            distanceMeters: distance,
+            primarySource: .garminOfficialExport,
+            sourceReferences: [.init(source: .garminOfficialExport, id: "\(id)")]
         )
+    }
+
+    private func uuid(_ value: Int64) -> UUID {
+        UUID(uuidString: "00000000-0000-0000-0000-\(String(format: "%012lld", value))")!
     }
 
     private func date(_ value: String) -> Date {

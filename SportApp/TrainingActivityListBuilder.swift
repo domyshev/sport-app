@@ -101,8 +101,16 @@ struct TrainingActivityTypeCategory: Hashable, Codable, Identifiable, Comparable
     }
 
     nonisolated init(activity: GarminActivity) {
-        let activityType = activity.activityType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let normalizedName = activity.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.init(activityType: activity.activityType, name: activity.name)
+    }
+
+    nonisolated init(activity: TrainingActivity) {
+        self.init(activityType: activity.activityType, name: activity.name)
+    }
+
+    private nonisolated init(activityType rawActivityType: String, name: String) {
+        let activityType = rawActivityType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let lowercasedName = normalizedName.lowercased()
 
         if lowercasedName.contains("rest") || activityType.contains("rest") {
@@ -128,11 +136,11 @@ struct TrainingActivityTypeCategory: Hashable, Codable, Identifiable, Comparable
         case "stand_up_paddleboarding_v2":
             self.init(id: "stand_up_paddleboarding_v2", title: "SUP")
         default:
-            self.init(id: activityType.isEmpty ? lowercasedName : activityType, title: normalizedName.isEmpty ? activity.activityType : normalizedName)
+            self.init(id: activityType.isEmpty ? lowercasedName : activityType, title: normalizedName.isEmpty ? rawActivityType : normalizedName)
         }
     }
 
-    static func availableCategories(from activities: [GarminActivity]) -> [Self] {
+    static func availableCategories(from activities: [TrainingActivity]) -> [Self] {
         let categoriesByID = activities.reduce(into: [String: Self]()) { result, activity in
             let category = Self(activity: activity)
             result[category.id] = category
@@ -185,7 +193,7 @@ struct TrainingActivityTypeSelection: Equatable {
         isAll || selectedCount == availableCategories.count
     }
 
-    func includes(_ activity: GarminActivity) -> Bool {
+    func includes(_ activity: TrainingActivity) -> Bool {
         guard let selectedCategories else { return true }
         return selectedCategories.contains(TrainingActivityTypeCategory(activity: activity))
     }
@@ -276,35 +284,35 @@ struct TrainingActivityListBuilder {
     }
 
     func buildCards(
-        from activities: [GarminActivity],
+        from activities: [TrainingActivity],
         period: TrainingPeriodSelection,
         typeSelection: TrainingActivityTypeSelection = .all
     ) -> [TrainingActivityCardModel] {
-        guard let latestActivity = activities.max(by: { $0.startTimeLocal < $1.startTimeLocal }) else { return [] }
-        let latestDate = Date(timeIntervalSince1970: latestActivity.startTimeLocal / 1_000)
+        guard let latestActivity = activities.max(by: { $0.startDate < $1.startDate }) else { return [] }
+        let latestDate = latestActivity.startDate
         let range = period.dateRange(latestDate: latestDate, calendar: calendar)
 
         return activities
             .filter { activity in
-                let date = calendar.startOfDay(for: Date(timeIntervalSince1970: activity.startTimeLocal / 1_000))
+                let date = calendar.startOfDay(for: activity.startDate)
                 return range.contains(date) && typeSelection.includes(activity)
             }
             .sorted { lhs, rhs in
-                if lhs.startTimeLocal != rhs.startTimeLocal { return lhs.startTimeLocal > rhs.startTimeLocal }
-                return lhs.activityId > rhs.activityId
+                if lhs.startDate != rhs.startDate { return lhs.startDate > rhs.startDate }
+                return lhs.id.uuidString > rhs.id.uuidString
             }
             .map(makeCard)
     }
 
-    private func makeCard(from activity: GarminActivity) -> TrainingActivityCardModel {
+    private func makeCard(from activity: TrainingActivity) -> TrainingActivityCardModel {
         TrainingActivityCardModel(
-            id: activity.activityId,
+            id: activity.id,
             activityType: activity.activityType,
             title: TrainingActivityPresentation.title(for: activity),
-            distanceText: TrainingActivityPresentation.distanceText(forGarminCentimeters: activity.distance),
-            durationText: TrainingActivityPresentation.durationText(for: activity.duration),
-            startTimeText: TrainingActivityPresentation.startTimeText(for: activity.startTimeLocal),
-            caloriesText: TrainingActivityPresentation.caloriesText(for: activity.calories)
+            distanceText: TrainingActivityPresentation.distanceText(forMeters: activity.distanceMeters),
+            durationText: TrainingActivityPresentation.durationText(forSeconds: activity.durationSeconds),
+            startTimeText: TrainingActivityPresentation.startTimeText(for: activity.startDate),
+            caloriesText: TrainingActivityPresentation.caloriesText(for: activity.caloriesKilocalories)
         )
     }
 }

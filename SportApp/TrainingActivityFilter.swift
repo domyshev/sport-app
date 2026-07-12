@@ -1,7 +1,7 @@
 import Foundation
 
 struct TrainingActivityFilter {
-    var includes: (GarminActivity) -> Bool
+    var includes: (TrainingActivity) -> Bool
 
     static let `default` = TrainingActivityFilter { activity in
         let blockedSportTypes = Set(["INVALID", "MEDITATION"])

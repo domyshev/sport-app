@@ -1,8 +1,9 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SportDashboardView: View {
     @State private var selectedTab: SportDashboardTab = .trainings
-    @State private var activities: [GarminActivity] = []
+    @State private var activities: [TrainingActivity] = []
     @State private var selectedPeriod: TrainingPeriodSelection = .preset(.oneWeek)
     @State private var selectedPreset: TrainingPeriodSelection.Preset = .oneWeek
     @State private var isCustomPeriod = false
@@ -11,16 +12,38 @@ struct SportDashboardView: View {
     @State private var recentCustomPeriods = TrainingRecentCustomPeriods()
     @State private var isShowingPeriodSheet = false
     @State private var isShowingTypeSheet = false
+    @State private var isShowingSettingsSheet = false
+    @State private var isImportingGarminFile = false
+    @State private var isSyncingHealth = false
+    @State private var dataStatusMessage = "Локальное хранилище готово"
     @AppStorage("trainingRecentCustomPeriods") private var recentCustomPeriodsData: Data = Data()
 
-    private let loader = GarminActivitiesLoader()
+    private let store = LocalTrainingActivityStore()
+    private let garminImporter = GarminOfficialExportImporter()
+    private let healthSource = HealthKitTrainingActivitySource()
     private let calendar = WeeklyEffortCalculator.makeMondayFirstCalendar()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Илья")
-                .font(.system(size: 26, weight: .semibold))
+            HStack(alignment: .center) {
+                Text("Илья")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                Button {
+                    isShowingSettingsSheet = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 17, weight: .semibold))
+                        .frame(width: 34, height: 34)
+                        .background(Color(.secondarySystemBackground), in: Circle())
+                }
+                .buttonStyle(.plain)
                 .foregroundStyle(.primary)
+                .accessibilityLabel("Настройки данных")
+            }
 
             SportDashboardTabBar(selectedTab: $selectedTab)
                 .padding(.top, 18)
@@ -67,9 +90,30 @@ struct SportDashboardView: View {
                 selection: $selectedTypes
             )
         }
+        .sheet(isPresented: $isShowingSettingsSheet) {
+            TrainingDataSettingsView(
+                activityCount: activities.count,
+                statusMessage: dataStatusMessage,
+                isSyncingHealth: isSyncingHealth,
+                onSyncHealth: syncHealth,
+                onImportGarmin: {
+                    isShowingSettingsSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        isImportingGarminFile = true
+                    }
+                }
+            )
+        }
+        .fileImporter(
+            isPresented: $isImportingGarminFile,
+            allowedContentTypes: [.zip, .folder],
+            allowsMultipleSelection: false,
+            onCompletion: handleGarminImport
+        )
         .task {
             loadActivities()
             recentCustomPeriods = TrainingRecentCustomPeriods.decoded(from: recentCustomPeriodsData)
+            syncHealth()
         }
         .onChange(of: recentCustomPeriods) { _, newValue in
             recentCustomPeriodsData = newValue.encoded()
@@ -151,7 +195,67 @@ struct SportDashboardView: View {
     }
 
     private func loadActivities() {
-        activities = (try? loader.load()) ?? []
+        if let storedActivities = try? store.loadActivities(), !storedActivities.isEmpty {
+            activities = storedActivities
+            dataStatusMessage = "В локальном хранилище: \(storedActivities.count)"
+            return
+        }
+
+        guard let bundledActivities = try? garminImporter.importBundledActivities() else {
+            activities = []
+            dataStatusMessage = "Нет данных"
+            return
+        }
+
+        _ = try? store.merge(bundledActivities)
+        activities = (try? store.loadActivities()) ?? bundledActivities
+        dataStatusMessage = "Загружена встроенная история: \(activities.count)"
+    }
+
+    private func syncHealth() {
+        guard !isSyncingHealth else { return }
+        isSyncingHealth = true
+
+        Task {
+            defer { isSyncingHealth = false }
+            do {
+                let healthActivities = try await healthSource.requestAuthorizationAndFetch()
+                let summary = try store.merge(healthActivities)
+                loadActivities()
+                dataStatusMessage = "Apple Health: \(summaryText(summary))"
+            } catch {
+                dataStatusMessage = "Apple Health недоступен: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func handleGarminImport(_ result: Result<[URL], Error>) {
+        do {
+            guard let url = try result.get().first else { return }
+            let hasSecurityAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if hasSecurityAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            let importedActivities: [TrainingActivity]
+            if url.pathExtension.lowercased() == "zip" {
+                importedActivities = try garminImporter.importZip(at: url)
+            } else {
+                importedActivities = try garminImporter.importFolder(at: url)
+            }
+
+            let summary = try store.merge(importedActivities)
+            loadActivities()
+            dataStatusMessage = "Garmin import: \(summaryText(summary))"
+        } catch {
+            dataStatusMessage = "Garmin import не выполнен: \(error.localizedDescription)"
+        }
+    }
+
+    private func summaryText(_ summary: TrainingImportSummary) -> String {
+        "добавлено \(summary.added), обновлено \(summary.updated), дублей \(summary.skippedDuplicates), ошибок \(summary.errors)"
     }
 }
 
@@ -182,6 +286,57 @@ private struct SportDashboardTabBar: View {
                         }
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct TrainingDataSettingsView: View {
+    let activityCount: Int
+    let statusMessage: String
+    let isSyncingHealth: Bool
+    let onSyncHealth: () -> Void
+    let onImportGarmin: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Данные") {
+                    HStack {
+                        Text("Тренировок")
+                        Spacer()
+                        Text("\(activityCount)")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text(statusMessage)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Источники") {
+                    Button {
+                        onSyncHealth()
+                    } label: {
+                        Label(isSyncingHealth ? "Синхронизация..." : "Синхронизировать Apple Health", systemImage: "heart.text.square")
+                    }
+                    .disabled(isSyncingHealth)
+
+                    Button {
+                        onImportGarmin()
+                        dismiss()
+                    } label: {
+                        Label("Импорт Garmin ZIP/папка", systemImage: "square.and.arrow.down")
+                    }
+                }
+            }
+            .navigationTitle("Настройки")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Готово") { dismiss() }
+                }
             }
         }
     }

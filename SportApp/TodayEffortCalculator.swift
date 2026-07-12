@@ -26,19 +26,19 @@ struct TodayEffortCalculator {
         self.calendar = calendar
     }
 
-    func calculate(from activities: [GarminActivity], on date: Date = Date()) -> TodayEffortSummary {
+    func calculate(from activities: [TrainingActivity], on date: Date = Date()) -> TodayEffortSummary {
         let targetDay = calendar.startOfDay(for: date)
         let todayActivities = activities.filter { activity in
             filter.includes(activity)
-                && calendar.startOfDay(for: Self.date(fromMilliseconds: activity.startTimeLocal)) == targetDay
+                && calendar.startOfDay(for: activity.startDate) == targetDay
         }
 
-        let calories = todayActivities.compactMap(\.calories).reduce(0, +)
+        let calories = todayActivities.compactMap(\.caloriesKilocalories).reduce(0, +)
         let durationMinutes = todayActivities.compactMap { activity -> Double? in
-            guard let duration = activity.duration, duration > 0 else {
+            guard let duration = activity.durationSeconds, duration > 0 else {
                 return nil
             }
-            return duration / 60_000
+            return duration / 60
         }.reduce(0, +)
 
         let effortValues = todayActivities.compactMap(effortValue)
@@ -52,23 +52,19 @@ struct TodayEffortCalculator {
         )
     }
 
-    private func effortValue(for activity: GarminActivity) -> Double? {
-        guard let calories = activity.calories,
-              let duration = activity.duration,
+    private func effortValue(for activity: TrainingActivity) -> Double? {
+        guard let calories = activity.caloriesKilocalories,
+              let duration = activity.durationSeconds,
               duration > 0
         else {
             return nil
         }
 
-        let durationMinutes = duration / 60_000
+        let durationMinutes = duration / 60
         guard durationMinutes > 0 else {
             return nil
         }
 
         return calories / durationMinutes
-    }
-
-    private static func date(fromMilliseconds milliseconds: Double) -> Date {
-        Date(timeIntervalSince1970: milliseconds / 1000)
     }
 }

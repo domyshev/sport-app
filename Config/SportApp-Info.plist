@@ -20,9 +20,11 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UIApplicationSceneManifest</key>
+		<key>LSRequiresIPhoneOS</key>
+		<true/>
+		<key>NSHealthShareUsageDescription</key>
+		<string>Приложение читает тренировки из Apple Health, чтобы показывать статистику тренировок и график усилия.</string>
+		<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<true/>
