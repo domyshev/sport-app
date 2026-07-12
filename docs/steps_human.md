@@ -1711,3 +1711,197 @@ NSWERANS
 
 Коммит: 0.1.0-alpha.1: первый работающий вариант приложения!
 ```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 53    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+1) у меня вчера 11 июня 2026 было плавание 2000 метров в море при этом приложение показывает "Бассейн"
+2) за это плавание я потратил согласно гармину 544 калория а наше приложение показывает 468
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Разобрал и поправил оба места.
+
+Важно по дате: сейчас в окружении проекта 12 июля 2026, поэтому "вчера" — это 11 июля 2026. Ты написал 11 июня 2026, поэтому я проверил оба дня: 11.06.2026 и 11.07.2026. В локальном Garmin export внутри проекта такой тренировки нет ни на одну из этих дат, то есть конкретная запись сейчас, скорее всего, пришла из Apple Health или из уже импортированных данных на телефоне.
+
+Что исправлено:
+- если Apple Health отдает плавание без metadata про бассейн/море, приложение больше не считает его "Бассейн", а показывает нейтрально "Плавание";
+- дедупликация теперь понимает, что swimming / lap_swimming / open_water_swimming могут быть одной и той же тренировкой из разных источников;
+- калории больше не блокируют объединение дубля, потому что Garmin и Apple Health могут считать их по-разному;
+- если в объединении участвует Garmin export, приложение предпочитает калории Garmin и open_water_swimming из Garmin. То есть при наличии Garmin-записи с 544 ккал и open_water_swimming карточка должна стать "Плавание Море" и показывать 544.
+
+Но: если на телефоне сейчас есть только запись Apple Health с 468 ккал и без признака open water, приложение не сможет само догадаться про 544 и море. Для этого нужна Garmin-запись в локальном хранилище, например после импорта более свежего Garmin export zip/folder.
+
+Проверка:
+- targeted tests HealthKitTrainingActivitySourceTests + TrainingActivityStoreTests -> TEST SUCCEEDED;
+- полный xcodebuild test: все unit-тесты прошли, общий прогон споткнулся на запуске UI runner в симуляторе;
+- отдельно упавший UI-тест SportAppUITests.testPresetPeriodSelectionAppliesAfterTappingPreset -> TEST SUCCEEDED;
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 54    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+зальешь на телефон
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Залил текущую сборку на iPhone truth.
+
+Что сделано:
+- xcodebuild build -scheme SportApp -configuration Debug -destination 'platform=iOS,id=00008130-00114C2622D2001C' -derivedDataPath .temp/DeviceBuild -allowProvisioningUpdates -> BUILD SUCCEEDED;
+- установил .temp/DeviceBuild/Build/Products/Debug-iphoneos/SportApp.app через devicectl;
+- devicectl вернул App installed для bundleID com.domyshev.sportapp;
+- установленная сборка содержит CFBundleShortVersionString 0.1.0, CFBundleVersion 1, SportAppReleaseName 0.1.0 alpha.
+
+Автозапуск после установки не прошел, потому что iPhone был заблокирован: устройство вернуло Locked. Сама установка выполнена, приложение можно открыть вручную после разблокировки.
+
+Проверка данных:
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON/mobileprovision файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 55    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+мне кажется в приложение нужно добавить в настройки красную danger кнопку очистки данных с сервисным кодом подтверждения 111 чтобы очистить данные локального хранилища. просто все что ты сделал не применилось и я думаю из за того что локально хранилище уже синкнуто
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Сделал и залил на iPhone truth.
+
+Что добавлено:
+- в настройках появилась секция "Опасная зона";
+- в ней красная кнопка "Очистить локальное хранилище";
+- перед очисткой приложение просит сервисный код 111;
+- удаляется только локальный JSON с тренировками внутри приложения на iPhone;
+- Apple Health, Garmin и from_garmin_official_export не изменяются;
+- после успешной очистки текущий список тренировок в UI становится пустым, чтобы было видно, что локальный слой очищен.
+
+Как пользоваться:
+1. Открыть SportApp.
+2. Нажать шестеренку настроек.
+3. В "Опасная зона" нажать "Очистить локальное хранилище".
+4. Ввести 111.
+5. После этого заново синхронизировать Apple Health или импортировать Garmin export, чтобы локальная база пересобралась уже с новой логикой дедупликации/калорий/плавания.
+
+Проверка:
+- сначала RED: тесты упали на отсутствующих clearActivities и TrainingDataClearance;
+- затем GREEN: TrainingActivityStoreTests -> TEST SUCCEEDED;
+- все unit-тесты SportAppTests -> TEST SUCCEEDED;
+- device build под iPhone truth -> BUILD SUCCEEDED;
+- devicectl установил SportApp.app на iPhone, bundleID com.domyshev.sportapp;
+- автозапуск не прошел, потому что iPhone был заблокирован: Locked;
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON/mobileprovision файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 56    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+окей. после импорта из файла или папки окно настроек просто закрывается и отображается главный экран при этом нет даже ни какого сообщения что записи успешно импортированы и сколько их импортировано. хотя по факту импорт проходит. ну или о том что импортировано столько то а столько то дублей если они были
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Сделал и залил обновление на iPhone truth.
+
+Что изменилось:
+- после импорта Garmin ZIP или папки на главном экране появляется статус-баннер;
+- баннер показывает результат вида "Garmin import: добавлено N, обновлено N, дублей N, ошибок N";
+- баннер можно закрыть крестиком;
+- ошибки импорта тоже показываются баннером;
+- такой же видимый статус теперь используется для Apple Health sync и очистки локального хранилища.
+
+Проверка:
+- xcodebuild test -scheme SportApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath .temp/TDDDerivedData -only-testing:SportAppTests -> TEST SUCCEEDED;
+- xcodebuild build под iPhone truth -> BUILD SUCCEEDED;
+- devicectl установил SportApp.app на iPhone, bundleID com.domyshev.sportapp;
+- автозапуск не прошел, потому что iPhone был заблокирован: Locked;
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON/mobileprovision файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+```

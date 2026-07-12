@@ -20,6 +20,41 @@ struct TrainingActivityStoreTests {
         #expect(loaded == [incoming])
     }
 
+    @Test func localStoreCanClearPersistedActivities() throws {
+        let fileURL = temporaryStoreURL()
+        let store = LocalTrainingActivityStore(fileURL: fileURL)
+        let incoming = training(
+            id: uuid(1),
+            source: .appleHealth,
+            sourceID: "health-1",
+            start: "2026-06-08T10:00:00Z"
+        )
+
+        try store.saveActivities([incoming])
+        try store.clearActivities()
+
+        #expect(try store.loadActivities().isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: fileURL.path))
+    }
+
+    @Test func localStoreClearanceRequiresServiceCode() {
+        #expect(TrainingDataClearance.canClear(with: "111"))
+        #expect(TrainingDataClearance.canClear(with: " 111 "))
+        #expect(!TrainingDataClearance.canClear(with: ""))
+        #expect(!TrainingDataClearance.canClear(with: "112"))
+    }
+
+    @Test func importStatusTextIncludesAddedUpdatedDuplicatesAndErrors() {
+        let summary = TrainingImportSummary(
+            added: 3,
+            skippedDuplicates: 5,
+            updated: 2,
+            errors: 1
+        )
+
+        #expect(TrainingImportStatusText.garminImport(summary) == "Garmin import: добавлено 3, обновлено 2, дублей 5, ошибок 1")
+    }
+
     @Test func garminImporterConvertsMillisecondsAndCentimetersToNormalizedUnits() throws {
         let activities = try GarminOfficialExportImporter().importActivities(
             from: Data(Self.garminJSON.utf8),
@@ -81,7 +116,7 @@ struct TrainingActivityStoreTests {
         #expect(result.summary.skippedDuplicates == 1)
     }
 
-    @Test func healthKitWinsCrossSourceDuplicateAndKeepsGarminReference() {
+    @Test func healthKitPrimaryDuplicateKeepsGarminReferenceAndCalories() {
         let garmin = training(
             id: uuid(1),
             source: .garminOfficialExport,
@@ -106,7 +141,7 @@ struct TrainingActivityStoreTests {
         #expect(result.activities.count == 1)
         #expect(result.activities[0].id == garmin.id)
         #expect(result.activities[0].primarySource == .appleHealth)
-        #expect(result.activities[0].caloriesKilocalories == 480)
+        #expect(result.activities[0].caloriesKilocalories == 500)
         #expect(result.activities[0].distanceMeters == 20_100)
         #expect(result.activities[0].sourceReferences.contains(.init(source: .appleHealth, id: "health-1")))
         #expect(result.activities[0].sourceReferences.contains(.init(source: .garminOfficialExport, id: "garmin-1")))
@@ -140,6 +175,40 @@ struct TrainingActivityStoreTests {
         #expect(result.activities[0].durationSeconds == 3_600)
         #expect(result.activities[0].caloriesKilocalories == 500)
         #expect(result.activities[0].distanceMeters == 20_000)
+        #expect(result.summary.updated == 1)
+    }
+
+    @Test func garminOpenWaterDuplicateEnrichesHealthKitSwimming() {
+        let health = training(
+            id: uuid(1),
+            source: .appleHealth,
+            sourceID: "health-swim",
+            start: "2026-06-11T08:00:00Z",
+            activityType: "swimming",
+            durationSeconds: 2_400,
+            caloriesKilocalories: 468,
+            distanceMeters: 2_000
+        )
+        let garmin = training(
+            id: uuid(2),
+            source: .garminOfficialExport,
+            sourceID: "garmin-swim",
+            start: "2026-06-11T08:01:00Z",
+            activityType: "open_water_swimming",
+            durationSeconds: 2_410,
+            caloriesKilocalories: 544,
+            distanceMeters: 2_000
+        )
+
+        let result = TrainingActivityDeduplicator().merge(existing: [health], incoming: [garmin])
+
+        #expect(result.activities.count == 1)
+        #expect(result.activities[0].primarySource == .appleHealth)
+        #expect(result.activities[0].activityType == "open_water_swimming")
+        #expect(result.activities[0].caloriesKilocalories == 544)
+        #expect(result.activities[0].distanceMeters == 2_000)
+        #expect(result.activities[0].sourceReferences.contains(.init(source: .appleHealth, id: "health-swim")))
+        #expect(result.activities[0].sourceReferences.contains(.init(source: .garminOfficialExport, id: "garmin-swim")))
         #expect(result.summary.updated == 1)
     }
 

@@ -38,7 +38,7 @@ struct TrainingActivityDeduplicator {
     }
 
     private func isProbableDuplicate(_ lhs: TrainingActivity, _ rhs: TrainingActivity) -> Bool {
-        guard TrainingActivityTypeCategory(activity: lhs) == TrainingActivityTypeCategory(activity: rhs) else {
+        guard activityTypesAreCompatible(lhs, rhs) else {
             return false
         }
 
@@ -58,13 +58,21 @@ struct TrainingActivityDeduplicator {
             return false
         }
 
-        if let lhsCalories = lhs.caloriesKilocalories,
-           let rhsCalories = rhs.caloriesKilocalories,
-           !valuesAreClose(lhsCalories, rhsCalories, absoluteTolerance: 50, relativeTolerance: 0.1) {
+        return true
+    }
+
+    private func activityTypesAreCompatible(_ lhs: TrainingActivity, _ rhs: TrainingActivity) -> Bool {
+        TrainingActivityTypeCategory(activity: lhs) == TrainingActivityTypeCategory(activity: rhs)
+            || (isSwimming(lhs) && isSwimming(rhs))
+    }
+
+    private func isSwimming(_ activity: TrainingActivity) -> Bool {
+        switch activity.activityType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "swimming", "lap_swimming", "open_water_swimming":
+            return true
+        default:
             return false
         }
-
-        return true
     }
 
     private func valuesAreClose(
@@ -84,16 +92,51 @@ struct TrainingActivityDeduplicator {
 
         var result = existing
         result.name = preferred.name.isEmpty ? fallback.name : preferred.name
-        result.activityType = preferred.activityType.isEmpty ? fallback.activityType : preferred.activityType
+        result.activityType = mergedActivityType(preferred: preferred, fallback: fallback)
         result.sportType = preferred.sportType ?? fallback.sportType
         result.startDate = preferred.startDate
         result.durationSeconds = preferred.durationSeconds ?? fallback.durationSeconds
-        result.caloriesKilocalories = preferred.caloriesKilocalories ?? fallback.caloriesKilocalories
+        result.caloriesKilocalories = mergedCalories(preferred: preferred, fallback: fallback)
         result.distanceMeters = preferred.distanceMeters ?? fallback.distanceMeters
         result.primarySource = preferred.primarySource
         result.addSourceReferences(existing.sourceReferences)
         result.addSourceReferences(incoming.sourceReferences)
         return result
+    }
+
+    private func mergedActivityType(preferred: TrainingActivity, fallback: TrainingActivity) -> String {
+        if isSwimming(preferred), isSwimming(fallback) {
+            if fallback.activityType == "open_water_swimming" {
+                return fallback.activityType
+            }
+
+            if preferred.activityType == "swimming", !fallback.activityType.isEmpty {
+                return fallback.activityType
+            }
+        }
+
+        return preferred.activityType.isEmpty ? fallback.activityType : preferred.activityType
+    }
+
+    private func mergedCalories(preferred: TrainingActivity, fallback: TrainingActivity) -> Double? {
+        if isGarminExport(preferred), let calories = preferred.caloriesKilocalories {
+            return calories
+        }
+
+        if isGarminExport(fallback), let calories = fallback.caloriesKilocalories {
+            return calories
+        }
+
+        return preferred.caloriesKilocalories ?? fallback.caloriesKilocalories
+    }
+
+    private func isGarminExport(_ activity: TrainingActivity) -> Bool {
+        switch activity.primarySource {
+        case .garminOfficialExport, .bundledGarminExport:
+            return true
+        case .appleHealth:
+            return false
+        }
     }
 
     private func preferredActivity(_ lhs: TrainingActivity, _ rhs: TrainingActivity) -> TrainingActivity {

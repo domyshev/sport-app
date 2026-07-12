@@ -24,6 +24,14 @@ struct LocalTrainingActivityStore {
         try data.write(to: fileURL, options: [.atomic])
     }
 
+    func clearActivities() throws {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return
+        }
+
+        try FileManager.default.removeItem(at: fileURL)
+    }
+
     func merge(_ incoming: [TrainingActivity]) throws -> TrainingImportSummary {
         let existing = try loadActivities()
         let result = deduplicator.merge(existing: existing, incoming: incoming)
@@ -51,4 +59,12 @@ struct LocalTrainingActivityStore {
         decoder.dateDecodingStrategy = .iso8601
         return decoder
     }()
+}
+
+enum TrainingDataClearance {
+    static let serviceCode = "111"
+
+    static func canClear(with code: String) -> Bool {
+        code.trimmingCharacters(in: .whitespacesAndNewlines) == serviceCode
+    }
 }

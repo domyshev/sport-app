@@ -24,4 +24,8 @@ struct HealthKitTrainingActivitySourceTests {
             ) == "open_water_swimming"
         )
     }
+
+    @Test func mapsSwimmingWithoutLocationMetadataToGenericSwimming() {
+        #expect(HealthKitTrainingActivityMapper.activityType(for: .swimming, metadata: [:]) == "swimming")
+    }
 }

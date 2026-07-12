@@ -38,6 +38,8 @@ enum TrainingActivityPresentation {
         switch activityType {
         case "open_water_swimming":
             return "Плавание Море"
+        case "swimming":
+            return "Плавание"
         case "lap_swimming":
             return "Бассейн"
         case "cycling", "indoor_cycling":

@@ -121,6 +121,8 @@ struct TrainingActivityTypeCategory: Hashable, Codable, Identifiable, Comparable
         switch activityType {
         case "open_water_swimming":
             self.init(id: "open_water_swimming", title: "Плавание Море")
+        case "swimming":
+            self.init(id: "swimming", title: "Плавание")
         case "lap_swimming":
             self.init(id: "lap_swimming", title: "Бассейн")
         case "cycling", "indoor_cycling":

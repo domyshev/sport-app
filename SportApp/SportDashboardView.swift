@@ -16,6 +16,7 @@ struct SportDashboardView: View {
     @State private var isImportingGarminFile = false
     @State private var isSyncingHealth = false
     @State private var dataStatusMessage = "Локальное хранилище готово"
+    @State private var visibleDataStatusMessage: String?
     @AppStorage("trainingRecentCustomPeriods") private var recentCustomPeriodsData: Data = Data()
 
     private let store = LocalTrainingActivityStore()
@@ -52,6 +53,13 @@ struct SportDashboardView: View {
 
             filterBar
                 .padding(.top, 14)
+
+            if let visibleDataStatusMessage {
+                TrainingDataStatusBanner(message: visibleDataStatusMessage) {
+                    self.visibleDataStatusMessage = nil
+                }
+                .padding(.top, 12)
+            }
 
             Group {
                 switch selectedTab {
@@ -104,7 +112,8 @@ struct SportDashboardView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                         isImportingGarminFile = true
                     }
-                }
+                },
+                onClearLocalData: clearLocalData
             )
         }
         .fileImporter(
@@ -223,9 +232,9 @@ struct SportDashboardView: View {
                 let healthActivities = try await healthSource.requestAuthorizationAndFetch()
                 let summary = try store.merge(healthActivities)
                 loadActivities()
-                dataStatusMessage = "Apple Health: \(summaryText(summary))"
+                showDataStatus("Apple Health: \(summaryText(summary))")
             } catch {
-                dataStatusMessage = "Apple Health недоступен: \(error.localizedDescription)"
+                showDataStatus("Apple Health недоступен: \(error.localizedDescription)")
             }
         }
     }
@@ -249,14 +258,37 @@ struct SportDashboardView: View {
 
             let summary = try store.merge(importedActivities)
             loadActivities()
-            dataStatusMessage = "Garmin import: \(summaryText(summary))"
+            showDataStatus(TrainingImportStatusText.garminImport(summary))
         } catch {
-            dataStatusMessage = "Garmin import не выполнен: \(error.localizedDescription)"
+            showDataStatus("Garmin import не выполнен: \(error.localizedDescription)")
+        }
+    }
+
+    private func clearLocalData(confirmationCode: String) -> Bool {
+        guard TrainingDataClearance.canClear(with: confirmationCode) else {
+            showDataStatus("Очистка отменена: неверный сервисный код")
+            return false
+        }
+
+        do {
+            try store.clearActivities()
+            activities = []
+            selectedTypes = .all
+            showDataStatus("Локальное хранилище очищено")
+            return true
+        } catch {
+            showDataStatus("Очистка не выполнена: \(error.localizedDescription)")
+            return false
         }
     }
 
     private func summaryText(_ summary: TrainingImportSummary) -> String {
-        "добавлено \(summary.added), обновлено \(summary.updated), дублей \(summary.skippedDuplicates), ошибок \(summary.errors)"
+        TrainingImportStatusText.summary(summary)
+    }
+
+    private func showDataStatus(_ message: String) {
+        dataStatusMessage = message
+        visibleDataStatusMessage = message
     }
 }
 
@@ -346,14 +378,71 @@ private struct NeonIconButton: View {
     }
 }
 
+private struct TrainingDataStatusBanner: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    private let palette = SportAppVisualStyle.palette
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color(palette.electricCyan))
+                .padding(.top, 1)
+
+            Text(message)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(palette.primaryText))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 8)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .frame(width: 28, height: 28)
+                    .foregroundStyle(Color(palette.secondaryText))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Закрыть сообщение")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(palette.electricCyan).opacity(0.22),
+                    Color(palette.panel).opacity(0.94)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: SportAppVisualStyle.cardRadius)
+                .stroke(Color(palette.cyanGlow).opacity(0.55), lineWidth: 1)
+        }
+        .shadow(color: Color(palette.electricCyan).opacity(0.2), radius: 12, x: 0, y: 5)
+        .accessibilityIdentifier("DataStatusBanner")
+    }
+}
+
 private struct TrainingDataSettingsView: View {
     let activityCount: Int
     let statusMessage: String
     let isSyncingHealth: Bool
     let onSyncHealth: () -> Void
     let onImportGarmin: () -> Void
+    let onClearLocalData: (String) -> Bool
 
     @Environment(\.dismiss) private var dismiss
+    @State private var isShowingClearConfirmation = false
+    @State private var clearConfirmationCode = ""
+    @State private var clearErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -385,9 +474,48 @@ private struct TrainingDataSettingsView: View {
                         Label("Импорт Garmin ZIP/папка", systemImage: "square.and.arrow.down")
                     }
                 }
+
+                Section("Опасная зона") {
+                    Button(role: .destructive) {
+                        clearConfirmationCode = ""
+                        clearErrorMessage = nil
+                        isShowingClearConfirmation = true
+                    } label: {
+                        Label("Очистить локальное хранилище", systemImage: "trash")
+                    }
+
+                    Text("Удаляются только локально сохраненные тренировки на этом iPhone. Apple Health и файлы Garmin не изменяются.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    if let clearErrorMessage {
+                        Text(clearErrorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
             }
             .navigationTitle("Настройки")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Очистить локальное хранилище?", isPresented: $isShowingClearConfirmation) {
+                TextField("Сервисный код", text: $clearConfirmationCode)
+                    .keyboardType(.numberPad)
+
+                Button("Отмена", role: .cancel) {
+                    clearConfirmationCode = ""
+                }
+
+                Button("Очистить", role: .destructive) {
+                    if onClearLocalData(clearConfirmationCode) {
+                        clearConfirmationCode = ""
+                    } else {
+                        clearErrorMessage = "Неверный сервисный код"
+                    }
+                }
+                .disabled(!TrainingDataClearance.canClear(with: clearConfirmationCode))
+            } message: {
+                Text("Введите сервисный код 111. Действие удалит локально сохраненные тренировки из приложения.")
+            }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Готово") { dismiss() }
