@@ -2058,3 +2058,45 @@ Self-review:
 
 Следующий шаг после твоего просмотра спеки: написать implementation plan.
 ```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 60    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+подтверждаю
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+План реализации готов и сохранен в docs/superpowers/plans/2026-07-12-connected-services-documentation.md.
+
+Self-review:
+- TODO/TBD-заглушек в плане нет;
+- git diff --check чистый;
+- from_garmin_official_export не изменялся;
+- новых git-видимых файлов с тренировочной историей, JSON/ZIP/FIT/TCX/GPX/mobileprovision/xcuserstate не появилось.
+
+Два варианта выполнения:
+1. Subagent-Driven - рекомендованный superpowers-вариант для параллельной реализации независимых частей.
+2. Inline Execution - я выполню план здесь последовательно, без субагентов.
+
+Какой подход выбираем?
+```
