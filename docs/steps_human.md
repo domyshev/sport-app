@@ -997,6 +997,33 @@ NSWERANS
 ```
 
 ```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Локальный commit с новой иконкой создан: e6d1acc feat: refresh app icon.
+
+Push не прошел из-за GitHub SSH-доступа: git@github.com: Permission denied (publickey). SSH-agent был пустой, затем из keychain загрузились локальные ключи, но GitHub их не принял. HTTPS push тоже не смог получить credentials из keychain. После восстановления GitHub SSH-ключа нужно выполнить git push origin main.
+
+По онлайн-данным Garmin предлагаю так:
+
+1. Рекомендованный первый путь для этого iPhone-приложения: Garmin Connect -> Apple Health -> наше приложение через HealthKit. Garmin официально поддерживает передачу данных из Garmin Connect в Apple Health. Apple HealthKit является локальным хранилищем health/fitness данных на iPhone, которое приложение может читать с разрешения пользователя. Это проще всего для личного приложения без backend и без enterprise-доступа Garmin. Ограничение: не все Garmin-специфичные поля/FIT-детали могут попасть в HealthKit, а данные появляются после синка Garmin Connect.
+
+2. Правильный прямой Garmin-путь: Garmin Connect Developer Program, Activity API/Health API. Activity API дает доступ к детальным данным активности и FIT/GPX/TCX, Health API дает JSON по health метрикам. У Garmin есть Ping/Pull или Push архитектура, но нужен approval/evaluation environment, а коммерческое использование Health API требует license fee. Это лучший путь для полной точности Garmin, но он требует backend, OAuth/consent, хранения токенов и одобрения Garmin.
+
+3. Практичный промежуточный путь: Garmin -> Strava -> наше приложение через Strava API. Strava поддерживает OAuth2, activity scopes и webhooks для activity create/update/delete. Это проще получить, чем прямой Garmin API, но часть Garmin-специфики потеряется.
+
+Не рекомендую скрейпить Garmin Connect неофициальными библиотеками: это хрупко, небезопасно и может сломаться или нарушить правила сервиса.
+```
+
+```text
 ◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
 ◆░░░░░░░░░░░░░░◆
 ◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
