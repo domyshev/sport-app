@@ -1905,3 +1905,56 @@ NSWERANS
 - новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON/mobileprovision файлов с тренировочной историей не появилось;
 - from_garmin_official_export не изменялся.
 ```
+
+```text
+◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆
+◆░░░░░░░░░░░░░░◆
+◇▒▒▒▒▒▒▒▒▒▒▒▒▒▒◇
+◆    шаг 57    ◆
+◇▓▓▓▓▓▓▓▓▓▓▓▓▓▓◇
+◆▒▒▒▒▒▒▒▒▒▒▒▒▒▒◆
+◇░░░░░░░░░░░░░░◇
+◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇
+```
+
+```text
+да стало хорошо. комить и пуш и далее.
+
+теперь вместо бассейн всегда показывает "плавание" даже для бассейна
+```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Сначала закоммитил и запушил предыдущее проверенное состояние с баннером импорта:
+- commit bd38979 Show import status after Garmin import;
+- push в ветку codex/healthkit-local-store выполнен.
+
+Потом разобрал и исправил регрессию с бассейном:
+- если Apple Health не дает HKMetadataKeySwimmingLocationType, но дает HKMetadataKeyLapLength, плавание теперь считается lap_swimming и в UI будет "Бассейн";
+- уже сохраненная локальная запись Apple Health с типом swimming сможет обновиться до lap_swimming при следующей синхронизации, если придет тот же HealthKit workout id с более конкретным типом;
+- общий swimming без location и без lapLength остается "Плавание", чтобы море без метаданных не превращалось обратно в "Бассейн".
+
+Залил текущую сборку на iPhone truth. Автозапуск не прошел, потому что телефон заблокирован: Locked. Чтобы проверить фикс на уже сохраненных данных, нужно открыть приложение и нажать Apple Health sync.
+
+Проверка:
+- RED: новые тесты mapsSwimmingWithLapLengthMetadataToPoolWhenLocationIsMissing и exactSourceSwimmingDuplicateRefreshesMoreSpecificPoolType упали до правки;
+- GREEN: HealthKitTrainingActivitySourceTests + TrainingActivityStoreTests -> TEST SUCCEEDED;
+- все SportAppTests -> TEST SUCCEEDED;
+- device build под iPhone truth -> BUILD SUCCEEDED;
+- devicectl установил SportApp.app на iPhone, bundleID com.domyshev.sportapp;
+- git diff --check чистый;
+- новых git-видимых raw Garmin/ZIP/FIT/TCX/GPX/JSON/mobileprovision файлов с тренировочной историей не появилось;
+- from_garmin_official_export не изменялся.
+
+Исправление бассейна пока не коммитил и не пушил после установки на телефон, чтобы ты сначала проверил поведение.
+```

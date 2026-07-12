@@ -116,6 +116,31 @@ struct TrainingActivityStoreTests {
         #expect(result.summary.skippedDuplicates == 1)
     }
 
+    @Test func exactSourceSwimmingDuplicateRefreshesMoreSpecificPoolType() {
+        let existing = training(
+            id: uuid(1),
+            source: .appleHealth,
+            sourceID: "health-pool",
+            start: "2026-06-08T10:00:00Z",
+            activityType: "swimming"
+        )
+        let incoming = training(
+            id: uuid(2),
+            source: .appleHealth,
+            sourceID: "health-pool",
+            start: "2026-06-08T10:00:00Z",
+            activityType: "lap_swimming"
+        )
+
+        let result = TrainingActivityDeduplicator().merge(existing: [existing], incoming: [incoming])
+
+        #expect(result.activities.count == 1)
+        #expect(result.activities[0].id == existing.id)
+        #expect(result.activities[0].activityType == "lap_swimming")
+        #expect(result.summary.updated == 1)
+        #expect(result.summary.skippedDuplicates == 0)
+    }
+
     @Test func healthKitPrimaryDuplicateKeepsGarminReferenceAndCalories() {
         let garmin = training(
             id: uuid(1),

@@ -28,4 +28,13 @@ struct HealthKitTrainingActivitySourceTests {
     @Test func mapsSwimmingWithoutLocationMetadataToGenericSwimming() {
         #expect(HealthKitTrainingActivityMapper.activityType(for: .swimming, metadata: [:]) == "swimming")
     }
+
+    @Test func mapsSwimmingWithLapLengthMetadataToPoolWhenLocationIsMissing() {
+        #expect(
+            HealthKitTrainingActivityMapper.activityType(
+                for: .swimming,
+                metadata: [HKMetadataKeyLapLength: HKQuantity(unit: .meter(), doubleValue: 25)]
+            ) == "lap_swimming"
+        )
+    }
 }

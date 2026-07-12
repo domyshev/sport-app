@@ -15,8 +15,13 @@ struct TrainingActivityDeduplicator {
 
         for activity in incoming {
             if let exactIndex = activities.firstIndex(where: { sharesSourceReference($0, activity) }) {
-                activities[exactIndex].addSourceReferences(activity.sourceReferences)
-                summary.skippedDuplicates += 1
+                let refreshed = refreshedExactSourceDuplicate(existing: activities[exactIndex], incoming: activity)
+                if refreshed == activities[exactIndex] {
+                    summary.skippedDuplicates += 1
+                } else {
+                    activities[exactIndex] = refreshed
+                    summary.updated += 1
+                }
                 continue
             }
 
@@ -116,6 +121,27 @@ struct TrainingActivityDeduplicator {
         }
 
         return preferred.activityType.isEmpty ? fallback.activityType : preferred.activityType
+    }
+
+    private func refreshedExactSourceDuplicate(existing: TrainingActivity, incoming: TrainingActivity) -> TrainingActivity {
+        var result = existing
+        result.activityType = refreshedSwimmingActivityType(existing: existing, incoming: incoming)
+        result.addSourceReferences(incoming.sourceReferences)
+        return result
+    }
+
+    private func refreshedSwimmingActivityType(existing: TrainingActivity, incoming: TrainingActivity) -> String {
+        let existingType = existing.activityType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let incomingType = incoming.activityType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        if existingType == "swimming",
+           isSwimming(incoming),
+           incomingType != "swimming",
+           !incoming.activityType.isEmpty {
+            return incoming.activityType
+        }
+
+        return existing.activityType
     }
 
     private func mergedCalories(preferred: TrainingActivity, fallback: TrainingActivity) -> Double? {

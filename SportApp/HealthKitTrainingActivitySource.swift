@@ -112,6 +112,11 @@ enum HealthKitTrainingActivityMapper {
         guard let rawValue = metadata[HKMetadataKeySwimmingLocationType] as? Int,
               let location = HKWorkoutSwimmingLocationType(rawValue: rawValue)
         else {
+            if let lapLength = metadata[HKMetadataKeyLapLength] as? HKQuantity,
+               lapLength.doubleValue(for: .meter()) > 0 {
+                return "lap_swimming"
+            }
+
             return "swimming"
         }
 
