@@ -2217,3 +2217,37 @@ Unable to launch com.domyshev.sportapp because the device was not, or could not 
 можешь комитить и пушить и после нужно разобраться с проблемой
 в записях которые именно приезжают с эппл хелс плавание в море всегда отображается как просто Плавание то есть как и в бассейне. те записи что импортировались из файлов экспорта гармин правильно отображают плавание в море. у тебя есть возможность сейчас проверить реальные данные эппл хелс в моем аккаунте чтобы понять это? у тебя есть доступ?
 ```
+
+```text
+ANSWERAN
+NSWERANS
+SWERANSW
+WANSWERA
+EANSWERN
+RANSWERA
+ANSWERAN
+NSWERANS
+```
+
+```text
+Закоммитил и запушил готовый раздел документации:
+- commit a21efe9 Add connected services documentation;
+- push в codex/healthkit-local-store выполнен через HTTPS, потому что SSH remote сейчас не видел ключ.
+
+По Apple Health:
+- прямого доступа к твоему Apple Health аккаунту или облачным данным у меня нет;
+- HealthKit данные читаются только на устройстве, приложением с entitlement и после разрешения пользователя;
+- через Codex/терминал я не могу напрямую открыть твой Apple Health и посмотреть реальные workout metadata;
+- сейчас телефон truth виден как unavailable, поэтому live-проверку через устройство тоже сделать нельзя.
+
+Что видно по коду:
+- Apple Health отдает плавание как HKWorkoutActivityType.swimming;
+- приложение отличает море только если есть HKMetadataKeySwimmingLocationType == openWater;
+- бассейн определяется по HKMetadataKeySwimmingLocationType == pool/unknown или по HKMetadataKeyLapLength;
+- если этих metadata нет, код возвращает generic swimming, а UI пишет "Плавание";
+- Garmin export отображается правильно, потому что там есть явный activityType open_water_swimming.
+
+Гипотеза: Garmin Connect при записи в Apple Health не передает HKMetadataKeySwimmingLocationType для морского плавания, либо передает другой metadata-признак. В SDK есть кандидат HKMetadataKeyIndoorWorkout: если Apple Health пишет indoor=false, можно будет использовать это как fallback для open_water_swimming, но это надо подтвердить реальными metadata.
+
+Лучший следующий шаг: добавить диагностический экран/кнопку в настройках, который покажет для последних плавательных тренировок из Apple Health source, uuid, дату, mapped type и metadata keys: HKMetadataKeySwimmingLocationType, HKMetadataKeyLapLength, HKMetadataKeyIndoorWorkout. Данные не нужно коммитить; они будут видны только на телефоне. После этого станет понятно, можно ли исправить маппинг надежно или Apple Health не дает достаточно информации.
+```
