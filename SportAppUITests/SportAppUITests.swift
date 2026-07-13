@@ -41,6 +41,21 @@ final class SportAppUITests: XCTestCase {
     }
 
     @MainActor
+    func testDocumentationOpensConnectedServices() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let documentationButton = app.buttons["Документация"].firstMatch
+        XCTAssertTrue(documentationButton.waitForExistence(timeout: 5))
+        documentationButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Документация"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Связанные сервисы"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Apple Health"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Garmin Connect"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

@@ -12,6 +12,7 @@ struct SportDashboardView: View {
     @State private var recentCustomPeriods = TrainingRecentCustomPeriods()
     @State private var isShowingPeriodSheet = false
     @State private var isShowingTypeSheet = false
+    @State private var isShowingDocumentationSheet = false
     @State private var isShowingSettingsSheet = false
     @State private var isImportingGarminFile = false
     @State private var isSyncingHealth = false
@@ -39,6 +40,13 @@ struct SportDashboardView: View {
                     )
 
                 Spacer()
+
+                NeonIconButton(
+                    systemName: "book.closed",
+                    accessibilityLabel: "Документация"
+                ) {
+                    isShowingDocumentationSheet = true
+                }
 
                 NeonIconButton(
                     systemName: "gearshape",
@@ -100,6 +108,9 @@ struct SportDashboardView: View {
                 categories: availableTypeCategories,
                 selection: $selectedTypes
             )
+        }
+        .sheet(isPresented: $isShowingDocumentationSheet) {
+            ConnectedServicesDocumentationView()
         }
         .sheet(isPresented: $isShowingSettingsSheet) {
             TrainingDataSettingsView(
